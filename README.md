@@ -1,85 +1,56 @@
-# VoxC - 去中心化音乐评分平台
+# Treez
 
-VoxC 是一个基于区块链技术的去中心化音乐评分平台，旨在打造一个公平、透明的音乐评价生态系统。平台通过去中心化技术确保每个用户的声音都能被公平记录和评估。
+Treez 是一份公开的个人鉴赏志，覆盖音乐、影视、书籍和游戏。用户通过 iNon
+SSO 登录后，可以新增公共条目，并以十分制或五星半星制留下评分、评论日期与
+标签；未登录用户可以浏览全部条目、聚合分、评论和个人公开档案。
 
-## 🎯 项目愿景
+产品与实现边界以根目录 [AGENTS.md](./AGENTS.md) 为准。
 
-打造一个由社区驱动的音乐评分平台，让每个用户的声音都能被真实记录，重构音乐评价体系的价值分配机制。
+## 架构
 
-## 🚀 核心功能
+- Next.js 16 App Router、React 19、TypeScript
+- 最新 shadcn/ui（Radix）与 Treez Heritage 设计系统
+- Cloudflare Worker + Hono 公共 API
+- Cloudflare D1 业务数据
+- Cloudflare R2 封面与附件（启用与回填进行中）
+- Vercel 承载 `treez.inon.space`
+- iNon SSO 负责登录；Next.js 校验会话后签名调用 Worker 写接口
 
-- 去中心化音乐评分系统
-- 用户评论与互动
-- 基于区块链的数据存储
-- 社区驱动的治理机制
+## 本地运行
 
-## 🛠 技术栈
-
-### 前端
-- React
-- TypeScript
-- Vite
-
-### 后端
-- Nest.js
-- TypeScript
-- Node.js
-
-## 🔧 开发环境设置
-
-1. 克隆仓库
 ```bash
-git clone https://github.com/JacksonHe04/voxc.git
-```
-
-2. 安装依赖
-
-前端：
-```bash
-cd client
 pnpm install
+pnpm run db:migrate:local
+pnpm run dev:worker
+pnpm run dev
 ```
 
-后端：
+复制 `.env.example` 为 `.env.local` 并填入本地所需环境变量。密钥不得提交。
+
+## 数据导入
+
+本地 Notion 默认来源：
+
+```text
+/Users/jackson/iNon/WiKi/notion/All About Myself/Dimensions/Hobbies/Music/Albums & Artists
+```
+
+先生成 dry-run、审计 JSON 与幂等 SQL：
+
 ```bash
-cd server
-pnpm install
+pnpm run import:notion:dry-run
 ```
 
-3. 启动开发服务器
+输出位于 `.agents/docs/260726/import/`。生产应用前必须核对报告、冲突和四库
+数量；Notion 默认只读，首次导入后 D1 是业务真源。
 
-前端：
+## 验证
+
 ```bash
-cd client
-pnpm dev
+pnpm run lint
+pnpm run check
+pnpm run build
+pnpm run build:worker
 ```
 
-后端：
-```bash
-cd server
-pnpm dev
-```
-
-## 📝 开发规范
-
-- 代码风格遵循 ESLint 配置
-- 提交信息遵循 Conventional Commits 规范
-- 分支管理采用 Git Flow 工作流
-
-## 🤝 如何贡献
-
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交改动 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 提交 Pull Request
-
-## 📄 许可证
-
-本项目采用 [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0) 许可证。
-
-## 🔗 相关链接
-
-- [项目文档](./docs)
-- [API 文档](./docs/api)
-- [贡献指南](./CONTRIBUTING.md)
+所有设计、计划、迁移、导入与验收记录保存在 `.agents/docs/YYMMDD/`。
