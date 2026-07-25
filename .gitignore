@@ -24,4 +24,6 @@ Thumbs.db
 .env
 .env.*
 !.env.example
-EOL
+
+# Vercel project link
+.vercel/
