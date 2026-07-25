@@ -59,3 +59,23 @@ INON_SSO_PUBLIC_ORIGIN=https://treez.inon.space
 5. 登录后导航显示中央用户名或邮箱；
 6. 退出登录通过项目 SDK 撤销中央刷新令牌并清理本地会话；
 7. 个人中心显示中央邮箱、用户名与 Treez 项目身份，并链接到中央账户页。
+
+## 生产部署记录
+
+- Vercel 项目：`yingyingdontkill/treez`
+- Vercel Project ID：`prj_6k4NZxQ32rJhtpHaZo8jYt0J7AXV`
+- 生产部署：`dpl_4mZGD2CKBASXVnEUCLC92iUQfZgM`
+- 部署状态：READY
+- 已添加项目域名：`treez.inon.space`
+- 健康检查：200
+- 未登录 `/api/auth/me`：200，`Cache-Control: private, no-store`
+- 登录入口：303 到 `inon.space`，回调为 `https://treez.inon.space/api/auth/inon/callback`
+- 未登录 `/user/me`：307 到项目登录入口
+
+`inon.space` 的 DNS 托管在阿里云。Vercel 已接受域名，但生产启用仍需在阿里云 DNS 添加：
+
+```text
+记录类型：A
+主机记录：treez
+记录值：76.76.21.21
+```
