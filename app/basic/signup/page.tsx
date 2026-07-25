@@ -1,7 +1,7 @@
+import { redirect } from 'next/navigation';
+
+import { getTreezSso } from '@/lib/auth/inon-sso';
+
 export default function Signup() {
-  return (
-    <div>
-      <p>注册页面</p>
-    </div>
-  );
+  redirect(getTreezSso().loginUrl('/'));
 }

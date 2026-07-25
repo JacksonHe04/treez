@@ -23,4 +23,7 @@ Thumbs.db
 # Environment variables
 .env
 .env.*
-EOL
+!.env.example
+
+# Vercel project link
+.vercel/
