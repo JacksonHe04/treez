@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { getTreezSso } from '@/lib/auth/inon-sso';
+import { treezLoginPath, treezRefreshPath } from '@/lib/auth/paths';
 
 export type TreezViewer = {
   session: InonProjectSession;
@@ -67,10 +68,10 @@ export async function requireTreezPage(
   } catch (error) {
     if (error instanceof InonSsoError) {
       if (error.code === 'UNAUTHENTICATED') {
-        redirect(getTreezSso().loginUrl(returnTo));
+        redirect(treezLoginPath(returnTo));
       }
       if (error.code === 'REFRESH_REQUIRED') {
-        redirect(getTreezSso().refreshUrl(returnTo));
+        redirect(treezRefreshPath(returnTo));
       }
       if (error.code === 'FORBIDDEN') redirect('/');
     }
