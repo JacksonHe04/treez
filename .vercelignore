@@ -1,0 +1,5 @@
+native/
+.agents/
+output/
+.playwright-cli/
+.wrangler/
