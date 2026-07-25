@@ -1,0 +1,39 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "treez-api",
+  "main": "worker/src/index.ts",
+  "compatibility_date": "2026-07-25",
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+  },
+  "vars": {
+    "ENVIRONMENT": "development",
+    "CORS_ORIGINS": "http://localhost:3000,https://treez.inon.space",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "treez-production",
+      "database_id": "442b52ad-bfb9-46de-8753-2cc09086ee4d",
+      "migrations_dir": "./migrations",
+    },
+  ],
+  "env": {
+    "production": {
+      "name": "treez-api-production",
+      "vars": {
+        "ENVIRONMENT": "production",
+        "CORS_ORIGINS": "https://treez.inon.space",
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "treez-production",
+          "database_id": "442b52ad-bfb9-46de-8753-2cc09086ee4d",
+          "migrations_dir": "./migrations",
+        },
+      ],
+    },
+  },
+}

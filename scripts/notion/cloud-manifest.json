@@ -1,0 +1,37 @@
+{
+  "workspace": {
+    "id": "1593dd14-d688-4cb5-9aba-5d45b40ffecf",
+    "name": "缨缨的反杀从来不是错觉"
+  },
+  "verifiedAt": "2026-07-26T00:00:00+08:00",
+  "databases": {
+    "album": {
+      "pageId": "20fa90d9-0b97-8146-bbad-eeaae26248d7",
+      "dataSourceId": "20fa90d9-0b97-810a-881c-000ba5794f51",
+      "count": 98,
+      "idVerification": "complete"
+    },
+    "artist": {
+      "pageId": "20fa90d9-0b97-81c8-ad19-d067d7db6802",
+      "dataSourceId": "20fa90d9-0b97-8118-a741-000b661a0454",
+      "count": 117,
+      "idVerification": "partial"
+    },
+    "song": {
+      "pageId": "21fa90d9-0b97-8077-af95-ee44f30ffd3d",
+      "dataSourceId": "21fa90d9-0b97-809d-a536-000b7981a109",
+      "count": 236,
+      "idVerification": "partial"
+    },
+    "score": {
+      "pageId": "21fa90d9-0b97-80ca-af32-f69de082c59f",
+      "dataSourceId": "21fa90d9-0b97-80ea-81e9-000b4a47c91b",
+      "count": 21,
+      "idVerification": "partial"
+    }
+  },
+  "limitations": [
+    "Notion Plugin data-source query allowance was exhausted after live schema, count, album ID and subset verification.",
+    "Artist, song and score source IDs must be rechecked on the next available live query before their verification status is promoted from pending to verified."
+  ]
+}
