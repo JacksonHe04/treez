@@ -60,6 +60,7 @@ export type ProfileRating = {
   domain: Domain;
   kind: EntityKind;
   cover_url: string | null;
+  tags: Array<{ slug: string; name: string }>;
 };
 
 export type PublicProfile = {

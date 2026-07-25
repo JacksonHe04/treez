@@ -1,7 +1,18 @@
+"use client";
+
 import { CalendarDays, Leaf, Quote } from "lucide-react";
 import Link from "next/link";
+import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { domainById, kindLabels } from "@/lib/treez/config";
 import { formatCount, formatDate } from "@/lib/treez/format";
 import type { PublicProfile } from "@/lib/treez/types";
@@ -16,11 +27,39 @@ export function ProfileView({
   data: PublicProfile;
   personal?: boolean;
 }) {
+  const [domain, setDomain] = useState("all");
+  const [year, setYear] = useState("all");
+  const [selectedTag, setSelectedTag] = useState("all");
   const total = data.ratings.length;
   const average =
     total > 0
       ? data.ratings.reduce((sum, rating) => sum + rating.score, 0) / total
       : null;
+  const years = useMemo(
+    () =>
+      [
+        ...new Set(
+          data.ratings.map((rating) =>
+            new Date(rating.commented_at).getUTCFullYear().toString(),
+          ),
+        ),
+      ].sort((a, b) => Number(b) - Number(a)),
+    [data.ratings],
+  );
+  const visibleRatings = useMemo(
+    () =>
+      data.ratings.filter(
+        (rating) =>
+          (domain === "all" || rating.domain === domain) &&
+          (year === "all" ||
+            new Date(rating.commented_at).getUTCFullYear().toString() ===
+              year) &&
+          (selectedTag === "all" ||
+            (rating.tags ?? []).some((item) => item.slug === selectedTag)),
+      ),
+    [data.ratings, domain, selectedTag, year],
+  );
+  const filtered = domain !== "all" || year !== "all" || selectedTag !== "all";
 
   return (
     <main className="profile-page page-shell">
@@ -72,6 +111,66 @@ export function ProfileView({
         })}
       </section>
 
+      <section className="profile-filters" aria-label="鉴赏档案筛选">
+        <div>
+          <span>筛选这份档案</span>
+          <strong>
+            {visibleRatings.length} / {total}
+          </strong>
+        </div>
+        <Select value={domain} onValueChange={setDomain}>
+          <SelectTrigger aria-label="按领域筛选">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全部领域</SelectItem>
+            {(["music", "film", "book", "game"] as const).map((item) => (
+              <SelectItem key={item} value={item}>
+                {domainById[item].label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={year} onValueChange={setYear}>
+          <SelectTrigger aria-label="按年份筛选">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全部年份</SelectItem>
+            {years.map((item) => (
+              <SelectItem key={item} value={item}>
+                {item}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={selectedTag} onValueChange={setSelectedTag}>
+          <SelectTrigger aria-label="按标签筛选">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全部标签</SelectItem>
+            {data.tags.map((item) => (
+              <SelectItem key={item.slug} value={item.slug}>
+                {item.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={!filtered}
+          onClick={() => {
+            setDomain("all");
+            setYear("all");
+            setSelectedTag("all");
+          }}
+        >
+          清除筛选
+        </Button>
+      </section>
+
       <section className="profile-content">
         <div>
           <div className="section-heading">
@@ -81,9 +180,9 @@ export function ProfileView({
             </div>
             <CalendarDays aria-hidden="true" />
           </div>
-          {data.ratings.length > 0 ? (
+          {visibleRatings.length > 0 ? (
             <div className="timeline">
-              {data.ratings.map((rating) => (
+              {visibleRatings.map((rating) => (
                 <article key={rating.id} className="timeline-entry">
                   <time dateTime={rating.commented_at}>
                     {formatDate(rating.commented_at)}
@@ -119,7 +218,11 @@ export function ProfileView({
           ) : (
             <div className="profile-empty">
               <Leaf aria-hidden="true" />
-              <p>还没有公开鉴赏记录。</p>
+              <p>
+                {total > 0
+                  ? "当前筛选下还没有鉴赏记录。"
+                  : "还没有公开鉴赏记录。"}
+              </p>
             </div>
           )}
         </div>
@@ -129,9 +232,18 @@ export function ProfileView({
           {data.tags.length > 0 ? (
             <div className="tag-cloud">
               {data.tags.map((tag) => (
-                <span key={tag.slug}>
+                <button
+                  type="button"
+                  key={tag.slug}
+                  data-active={tag.slug === selectedTag}
+                  onClick={() =>
+                    setSelectedTag((current) =>
+                      current === tag.slug ? "all" : tag.slug,
+                    )
+                  }
+                >
                   {tag.name} <sup>{tag.usage_count}</sup>
-                </span>
+                </button>
               ))}
             </div>
           ) : (

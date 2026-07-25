@@ -17,6 +17,7 @@ import { treezLoginPath } from "@/lib/auth/paths";
 import { getProfileById, getPublicHome } from "@/lib/treez/api";
 import { domainById, domains } from "@/lib/treez/config";
 import { formatDate } from "@/lib/treez/format";
+import { emptyPublicProfile } from "@/lib/treez/profile";
 import type { PublicProfile } from "@/lib/treez/types";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +28,9 @@ export default async function HomePage() {
     getOptionalTreezViewer(),
   ]);
   const profile = viewer
-    ? await getProfileById(viewer.session.id).catch(() => null)
+    ? await getProfileById(viewer.session.id).catch(() =>
+        emptyPublicProfile(viewer.session),
+      )
     : null;
 
   return (
@@ -46,8 +49,14 @@ export default async function HomePage() {
       <section className="domain-ledger page-shell">
         {domains.map((domain) => {
           const count =
+            profile?.domains.find((item) => item.domain === domain.id)
+              ?.rating_count ??
             home.domains.find((item) => item.domain === domain.id)
-              ?.entity_count ?? 0;
+              ?.entity_count ??
+            0;
+          const personalAggregate = profile?.domains.find(
+            (item) => item.domain === domain.id,
+          );
           const Icon = domain.icon;
           return (
             <Link key={domain.id} href={domain.href}>
@@ -57,7 +66,13 @@ export default async function HomePage() {
               <Icon aria-hidden="true" />
               <div>
                 <strong>{domain.label}</strong>
-                <small>{domain.description}</small>
+                <small>
+                  {profile
+                    ? personalAggregate
+                      ? `我的均分 ${personalAggregate.average_score}`
+                      : "等待我的第一条鉴赏"
+                    : domain.description}
+                </small>
               </div>
               <ArrowRight aria-hidden="true" />
             </Link>
@@ -66,43 +81,46 @@ export default async function HomePage() {
       </section>
 
       {profile && profile.ratings.length > 0 && (
-        <section className="recent-notes page-shell">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">RECENT APPRECIATIONS</p>
-              <h2>最近留下的判断</h2>
+        <>
+          <section className="recent-notes page-shell">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">RECENT APPRECIATIONS</p>
+                <h2>最近留下的判断</h2>
+              </div>
+              <Button asChild variant="outline">
+                <Link href="/me">展开我的时间线</Link>
+              </Button>
             </div>
-            <Button asChild variant="outline">
-              <Link href="/me">展开我的时间线</Link>
-            </Button>
-          </div>
-          <div className="notes-grid">
-            {profile.ratings.slice(0, 4).map((rating) => (
-              <article key={rating.id} className="note-card">
-                <div>
-                  <span>{domainById[rating.domain].label}</span>
-                  <time dateTime={rating.commented_at}>
-                    {formatDate(rating.commented_at)}
-                  </time>
-                </div>
-                <h3>
-                  <Link href={`/entity/${rating.entity_id}`}>
-                    {rating.name}
-                  </Link>
-                </h3>
-                <ScoreValue value={rating.score} compact />
-                {rating.comment ? (
-                  <blockquote>
-                    <Quote aria-hidden="true" />
-                    {rating.comment}
-                  </blockquote>
-                ) : (
-                  <p>这次只留下了分数。</p>
-                )}
-              </article>
-            ))}
-          </div>
-        </section>
+            <div className="notes-grid">
+              {profile.ratings.slice(0, 4).map((rating) => (
+                <article key={rating.id} className="note-card">
+                  <div>
+                    <span>{domainById[rating.domain].label}</span>
+                    <time dateTime={rating.commented_at}>
+                      {formatDate(rating.commented_at)}
+                    </time>
+                  </div>
+                  <h3>
+                    <Link href={`/entity/${rating.entity_id}`}>
+                      {rating.name}
+                    </Link>
+                  </h3>
+                  <ScoreValue value={rating.score} compact />
+                  {rating.comment ? (
+                    <blockquote>
+                      <Quote aria-hidden="true" />
+                      {rating.comment}
+                    </blockquote>
+                  ) : (
+                    <p>这次只留下了分数。</p>
+                  )}
+                </article>
+              ))}
+            </div>
+          </section>
+          <PersonalInsights profile={profile} />
+        </>
       )}
 
       <section className="editorial-list page-shell">
@@ -127,6 +145,49 @@ export default async function HomePage() {
         </div>
       </section>
     </main>
+  );
+}
+
+function PersonalInsights({ profile }: { profile: PublicProfile }) {
+  const favorites = [...profile.ratings]
+    .sort(
+      (left, right) =>
+        right.score - left.score || right.rated_at.localeCompare(left.rated_at),
+    )
+    .slice(0, 5);
+  return (
+    <section className="personal-insights page-shell">
+      <div>
+        <p className="eyebrow">MY HIGHEST NOTES</p>
+        <h2>我的高分年轮</h2>
+        <ol>
+          {favorites.map((rating) => (
+            <li key={rating.id}>
+              <Link href={`/entity/${rating.entity_id}`}>
+                <span>{rating.name}</span>
+                <ScoreValue value={rating.score} compact />
+              </Link>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <div>
+        <p className="eyebrow">TASTE THREADS</p>
+        <h2>反复出现的偏好</h2>
+        {profile.tags.length > 0 ? (
+          <div className="personal-insights__tags">
+            {profile.tags.slice(0, 12).map((tag) => (
+              <Link key={tag.slug} href="/me">
+                {tag.name}
+                <sup>{tag.usage_count}</sup>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p>标签会在每次鉴赏中逐渐长成你的偏好索引。</p>
+        )}
+      </div>
+    </section>
   );
 }
 
