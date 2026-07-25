@@ -1,8 +1,8 @@
-import { getTreezSso } from './inon-sso';
+import { getTreezSso } from "./inon-sso";
 
 export function handleTreezPublicSsoRoute(
   request: Request,
-  action: 'login' | 'logout' | 'refresh',
+  action: "login" | "logout" | "refresh",
 ): Promise<Response> {
   const sso = getTreezSso();
   const url = new URL(request.url);

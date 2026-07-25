@@ -1,10 +1,10 @@
-import { getTreezViewer } from '@/lib/auth/viewer';
+import { getTreezViewer } from "@/lib/auth/viewer";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const viewer = await getTreezViewer();
-  const headers = { 'Cache-Control': 'private, no-store' };
+  const headers = { "Cache-Control": "private, no-store" };
   if (!viewer) return Response.json({ user: null }, { headers });
 
   return Response.json(

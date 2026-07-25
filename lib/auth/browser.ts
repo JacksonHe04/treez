@@ -1,13 +1,8 @@
-'use client';
+"use client";
 
-export {
-  treezLoginPath,
-  treezLogoutPath,
-} from './paths';
-import {
-  treezLoginPath,
-  treezLogoutPath,
-} from './paths';
+import { treezLoginPath, treezLogoutPath } from "./paths";
+
+export { treezLoginPath, treezLogoutPath };
 
 export type TreezBrowserUser = {
   id: string;
@@ -27,10 +22,10 @@ export async function getTreezBrowserUser(): Promise<TreezBrowserUser | null> {
   if (cachedUser !== undefined) return cachedUser;
   if (pendingUser) return pendingUser;
 
-  pendingUser = fetch('/api/auth/me', {
-    credentials: 'same-origin',
-    cache: 'no-store',
-    headers: { Accept: 'application/json' },
+  pendingUser = fetch("/api/auth/me", {
+    credentials: "same-origin",
+    cache: "no-store",
+    headers: { Accept: "application/json" },
   })
     .then(async (response) => {
       if (!response.ok) return null;

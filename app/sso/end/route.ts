@@ -1,5 +1,5 @@
-import { handleTreezPublicSsoRoute } from '@/lib/auth/public-route';
+import { handleTreezPublicSsoRoute } from "@/lib/auth/public-route";
 
 export function GET(request: Request): Promise<Response> {
-  return handleTreezPublicSsoRoute(request, 'logout');
+  return handleTreezPublicSsoRoute(request, "logout");
 }

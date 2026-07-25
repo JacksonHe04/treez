@@ -1,6 +1,6 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from "next/server";
 
-import { getTreezSso } from '@/lib/auth/inon-sso';
+import { getTreezSso } from "@/lib/auth/inon-sso";
 
 export async function proxy(request: NextRequest) {
   const session = await getTreezSso().getSession(request);
@@ -19,5 +19,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/user/:path*'],
+  matcher: ["/user/:path*"],
 };

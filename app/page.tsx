@@ -1,5 +1,224 @@
-import { redirect } from 'next/navigation';
+import {
+  ArrowRight,
+  BookOpen,
+  Clapperboard,
+  Gamepad2,
+  Music2,
+  Quote,
+  Sparkles,
+} from "lucide-react";
+import Link from "next/link";
 
-export default function Home() {
-  redirect('/basic/home');
+import { EntityCard } from "@/components/treez/entity-card";
+import { ScoreModeToggle, ScoreValue } from "@/components/treez/score";
+import { Button } from "@/components/ui/button";
+import { getOptionalTreezViewer } from "@/lib/auth/viewer";
+import { treezLoginPath } from "@/lib/auth/paths";
+import { getProfileById, getPublicHome } from "@/lib/treez/api";
+import { domainById, domains } from "@/lib/treez/config";
+import { formatDate } from "@/lib/treez/format";
+import type { PublicProfile } from "@/lib/treez/types";
+
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const [home, viewer] = await Promise.all([
+    getPublicHome(),
+    getOptionalTreezViewer(),
+  ]);
+  const profile = viewer
+    ? await getProfileById(viewer.session.id).catch(() => null)
+    : null;
+
+  return (
+    <main>
+      {profile ? (
+        <PersonalHero profile={profile} />
+      ) : (
+        <PublicHero
+          entityCount={home.domains.reduce(
+            (sum, item) => sum + item.entity_count,
+            0,
+          )}
+        />
+      )}
+
+      <section className="domain-ledger page-shell">
+        {domains.map((domain) => {
+          const count =
+            home.domains.find((item) => item.domain === domain.id)
+              ?.entity_count ?? 0;
+          const Icon = domain.icon;
+          return (
+            <Link key={domain.id} href={domain.href}>
+              <span className="domain-ledger__number">
+                {String(count).padStart(2, "0")}
+              </span>
+              <Icon aria-hidden="true" />
+              <div>
+                <strong>{domain.label}</strong>
+                <small>{domain.description}</small>
+              </div>
+              <ArrowRight aria-hidden="true" />
+            </Link>
+          );
+        })}
+      </section>
+
+      {profile && profile.ratings.length > 0 && (
+        <section className="recent-notes page-shell">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">RECENT APPRECIATIONS</p>
+              <h2>最近留下的判断</h2>
+            </div>
+            <Button asChild variant="outline">
+              <Link href="/me">展开我的时间线</Link>
+            </Button>
+          </div>
+          <div className="notes-grid">
+            {profile.ratings.slice(0, 4).map((rating) => (
+              <article key={rating.id} className="note-card">
+                <div>
+                  <span>{domainById[rating.domain].label}</span>
+                  <time dateTime={rating.commented_at}>
+                    {formatDate(rating.commented_at)}
+                  </time>
+                </div>
+                <h3>
+                  <Link href={`/entity/${rating.entity_id}`}>
+                    {rating.name}
+                  </Link>
+                </h3>
+                <ScoreValue value={rating.score} compact />
+                {rating.comment ? (
+                  <blockquote>
+                    <Quote aria-hidden="true" />
+                    {rating.comment}
+                  </blockquote>
+                ) : (
+                  <p>这次只留下了分数。</p>
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="editorial-list page-shell">
+        <div className="section-heading section-heading--bordered">
+          <div>
+            <p className="eyebrow">COMMUNITY SHELF</p>
+            <h2>公共鉴赏架</h2>
+          </div>
+          <div className="section-heading__actions">
+            <ScoreModeToggle />
+            <Button asChild variant="ghost">
+              <Link href="/search">浏览全部</Link>
+            </Button>
+          </div>
+        </div>
+        <div className="entity-grid entity-grid--featured">
+          {(home.acclaimed.length > 0 ? home.acclaimed : home.recent)
+            .slice(0, 8)
+            .map((entity, index) => (
+              <EntityCard key={entity.id} entity={entity} index={index} />
+            ))}
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function PublicHero({ entityCount }: { entityCount: number }) {
+  return (
+    <section className="home-hero home-hero--public">
+      <div className="page-shell home-hero__grid">
+        <div>
+          <p className="eyebrow">A PUBLIC JOURNAL OF PERSONAL TASTE</p>
+          <h1>
+            让每一次
+            <em>鉴赏</em>
+            都长成你的审美年轮。
+          </h1>
+          <p className="home-hero__intro">
+            Treez
+            收下你听过的音乐、看过的影视、读过的书与玩过的游戏。十分制或五星半星，
+            一条评论，一个日期，慢慢看见自己的偏好如何生长。
+          </p>
+          <div className="home-hero__actions">
+            <Button asChild size="lg">
+              <Link href={treezLoginPath("/")}>
+                使用 iNon SSO 开始
+                <ArrowRight aria-hidden="true" />
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline">
+              <Link href="/music">先逛公共档案</Link>
+            </Button>
+          </div>
+        </div>
+        <div className="hero-specimen" aria-label="Treez 四领域鉴赏">
+          <span className="hero-specimen__seal">T</span>
+          <p>Est. 2026</p>
+          <div>
+            <Music2 aria-hidden="true" />
+            <Clapperboard aria-hidden="true" />
+            <BookOpen aria-hidden="true" />
+            <Gamepad2 aria-hidden="true" />
+          </div>
+          <strong>{entityCount}</strong>
+          <small>PUBLIC ENTRIES & GROWING</small>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PersonalHero({ profile }: { profile: PublicProfile }) {
+  const latest = profile.ratings[0];
+  return (
+    <section className="home-hero home-hero--personal">
+      <div className="page-shell home-hero__grid">
+        <div>
+          <p className="eyebrow">
+            YOUR APPRECIATION, {formatDate(new Date().toISOString())}
+          </p>
+          <h1>
+            欢迎回来，
+            <em>{profile.profile.display_name}</em>
+          </h1>
+          <p className="home-hero__intro">
+            你已经留下 {profile.ratings.length}{" "}
+            条公开鉴赏。首页先讲述你的最近记录、评分习惯和四类偏好，
+            公共内容只在旁边提供新的发现。
+          </p>
+          <div className="home-hero__actions">
+            <Button asChild size="lg">
+              <Link href="/add">
+                新增一次鉴赏
+                <ArrowRight aria-hidden="true" />
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline">
+              <Link href="/me">打开我的档案</Link>
+            </Button>
+          </div>
+        </div>
+        <div className="personal-feature">
+          <Sparkles aria-hidden="true" />
+          <p className="eyebrow">LATEST NOTE</p>
+          {latest ? (
+            <>
+              <strong>{latest.name}</strong>
+              <ScoreValue value={latest.score} />
+              <p>{latest.comment ?? "这次只留下了分数。"}</p>
+            </>
+          ) : (
+            <p>从第一条鉴赏开始，首页会慢慢长成你的个人杂志。</p>
+          )}
+        </div>
+      </div>
+    </section>
+  );
 }

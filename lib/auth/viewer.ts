@@ -1,9 +1,9 @@
-import { InonSsoError, type InonProjectSession } from '@inon-ai/inon-sso';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { InonSsoError, type InonProjectSession } from "@inon-ai/inon-sso";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
-import { getTreezSso } from '@/lib/auth/inon-sso';
-import { treezLoginPath, treezRefreshPath } from '@/lib/auth/paths';
+import { getTreezSso } from "@/lib/auth/inon-sso";
+import { treezLoginPath, treezRefreshPath } from "@/lib/auth/paths";
 
 export type TreezViewer = {
   session: InonProjectSession;
@@ -13,22 +13,22 @@ export type TreezViewer = {
 function origin(): string {
   return (
     process.env.INON_SSO_PUBLIC_ORIGIN ??
-    (process.env.NODE_ENV === 'production'
-      ? 'https://treez.inon.space'
-      : 'http://localhost:3000')
+    (process.env.NODE_ENV === "production"
+      ? "https://treez.inon.space"
+      : "http://localhost:3000")
   );
 }
 
 export async function currentRequest(): Promise<Request> {
   const requestHeaders = await headers();
-  const cookie = requestHeaders.get('cookie');
+  const cookie = requestHeaders.get("cookie");
   return new Request(origin(), cookie ? { headers: { cookie } } : undefined);
 }
 
 function viewer(session: InonProjectSession): TreezViewer {
   return {
     session,
-    isAdmin: session.projectRole === 'admin',
+    isAdmin: session.projectRole === "admin",
   };
 }
 
@@ -41,6 +41,17 @@ export async function viewerFromRequest(
 
 export async function getTreezViewer(): Promise<TreezViewer | null> {
   return viewerFromRequest(await currentRequest());
+}
+
+export async function getOptionalTreezViewer(): Promise<TreezViewer | null> {
+  if (
+    !process.env.INON_SSO_CLIENT_ID ||
+    !process.env.INON_SSO_CLIENT_SECRET ||
+    !process.env.INON_SSO_SESSION_SECRET
+  ) {
+    return null;
+  }
+  return getTreezViewer();
 }
 
 export async function requireTreezUserRequest(
@@ -67,13 +78,13 @@ export async function requireTreezPage(
       : await requireTreezUserRequest(request);
   } catch (error) {
     if (error instanceof InonSsoError) {
-      if (error.code === 'UNAUTHENTICATED') {
+      if (error.code === "UNAUTHENTICATED") {
         redirect(treezLoginPath(returnTo));
       }
-      if (error.code === 'REFRESH_REQUIRED') {
+      if (error.code === "REFRESH_REQUIRED") {
         redirect(treezRefreshPath(returnTo));
       }
-      if (error.code === 'FORBIDDEN') redirect('/');
+      if (error.code === "FORBIDDEN") redirect("/");
     }
     throw error;
   }
