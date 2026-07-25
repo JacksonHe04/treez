@@ -47,10 +47,12 @@ signedWrite.post(
     if (input.relations.length > 0) {
       const placeholders = input.relations.map(() => "?").join(", ");
       const related = await context.env.DB.prepare(
-        `SELECT id FROM entities WHERE id IN (${placeholders}) AND is_public = 1`,
+        `SELECT id, domain, kind
+           FROM entities
+          WHERE id IN (${placeholders}) AND is_public = 1`,
       )
         .bind(...input.relations.map((relation) => relation.entityId))
-        .all<{ id: string }>();
+        .all<{ id: string; domain: string; kind: string }>();
       const found = new Set(related.results.map((row) => row.id));
       const missing = input.relations
         .map((relation) => relation.entityId)
@@ -62,6 +64,48 @@ signedWrite.post(
               code: "RELATED_ENTITY_NOT_FOUND",
               message: "One or more related public entities do not exist.",
               details: { ids: missing },
+            },
+          },
+          400,
+        );
+      }
+
+      const relatedById = new Map(
+        related.results.map((row) => [row.id, row] as const),
+      );
+      const creatorKind = {
+        music: "artist",
+        film: "director",
+        book: "author",
+        game: "studio",
+      }[input.domain];
+      const invalid = input.relations.filter((relation) => {
+        const target = relatedById.get(relation.entityId);
+        if (!target || target.domain !== input.domain) return true;
+        if (relation.type === "track_of") {
+          return input.kind !== "song" || target.kind !== "album";
+        }
+        if (
+          relation.type === "created_by" ||
+          relation.type === "contributed_by"
+        ) {
+          return target.kind !== creatorKind;
+        }
+        return relation.type !== "related_to";
+      });
+      if (invalid.length > 0) {
+        return context.json(
+          {
+            error: {
+              code: "INVALID_ENTITY_RELATION",
+              message:
+                "One or more relations do not match the selected domain and entity kinds.",
+              details: {
+                relations: invalid.map((relation) => ({
+                  entityId: relation.entityId,
+                  type: relation.type,
+                })),
+              },
             },
           },
           400,
@@ -267,6 +311,81 @@ signedWrite.put(
   },
 );
 
+signedWrite.put("/assets/:id/content", async (context) => {
+  if (!context.env.ASSETS) {
+    return context.json(
+      {
+        error: {
+          code: "ASSET_STORAGE_UNAVAILABLE",
+          message: "Treez asset storage is not enabled yet.",
+        },
+      },
+      503,
+    );
+  }
+
+  const asset = await context.env.DB.prepare(
+    "SELECT id, entity_id, kind FROM assets WHERE id = ?",
+  )
+    .bind(context.req.param("id"))
+    .first<{ id: string; entity_id: string | null; kind: string }>();
+  if (!asset) {
+    return context.json(
+      {
+        error: {
+          code: "ASSET_NOT_FOUND",
+          message: "The requested Treez asset does not exist.",
+        },
+      },
+      404,
+    );
+  }
+
+  const body = await context.req.arrayBuffer();
+  if (body.byteLength === 0 || body.byteLength > 10 * 1024 * 1024) {
+    return context.json(
+      {
+        error: {
+          code: "INVALID_ASSET_SIZE",
+          message: "Assets must be between 1 byte and 10 MB.",
+        },
+      },
+      400,
+    );
+  }
+
+  const checksum = await hashHex(body);
+  const contentType =
+    context.req.header("content-type") ?? "application/octet-stream";
+  const key = `${asset.kind}/${checksum}`;
+  await context.env.ASSETS.put(key, body, {
+    httpMetadata: { contentType },
+    customMetadata: {
+      assetId: asset.id,
+      ...(asset.entity_id ? { entityId: asset.entity_id } : {}),
+    },
+  });
+  await context.env.DB.prepare(
+    `UPDATE assets
+        SET r2_key = ?, content_type = ?, byte_size = ?, checksum = ?
+      WHERE id = ?`,
+  )
+    .bind(key, contentType, body.byteLength, checksum, asset.id)
+    .run();
+
+  return context.json(
+    {
+      data: {
+        id: asset.id,
+        key,
+        checksum,
+        byteSize: body.byteLength,
+      },
+    },
+    200,
+  );
+});
+
 signedWrite.post("/assets", async (context) => {
   if (!context.env.ASSETS) {
     return context.json(
@@ -333,12 +452,24 @@ signedWrite.post("/assets", async (context) => {
     customMetadata: { entityId },
   });
 
-  const assetId = crypto.randomUUID();
+  const existingAsset = await context.env.DB.prepare(
+    `SELECT id FROM assets
+      WHERE entity_id = ? AND kind = ? AND checksum = ?
+      LIMIT 1`,
+  )
+    .bind(entityId, kind, checksum)
+    .first<{ id: string }>();
+  const assetId = existingAsset?.id ?? crypto.randomUUID();
   await context.env.DB.batch([
     context.env.DB.prepare(
-      `INSERT OR IGNORE INTO assets (
+      `INSERT INTO assets (
            id, entity_id, kind, r2_key, content_type, byte_size, checksum
-         ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET
+           r2_key = excluded.r2_key,
+           content_type = excluded.content_type,
+           byte_size = excluded.byte_size,
+           checksum = excluded.checksum`,
     ).bind(
       assetId,
       entityId,

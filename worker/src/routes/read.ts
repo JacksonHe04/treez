@@ -27,7 +27,33 @@ type EntityRow = {
   average_score: number | null;
 };
 
+type CoverRow = Record<string, unknown> & {
+  asset_id?: string | null;
+  cover_r2_key?: string | null;
+  cover_url?: string | null;
+};
+
 const publicRead = new Hono<AppBindings>();
+
+function withResolvedCover<T extends CoverRow>(
+  context: Context<AppBindings>,
+  row: T,
+): Omit<T, "asset_id" | "cover_r2_key"> & { cover_url: string | null } {
+  const {
+    asset_id: assetId,
+    cover_r2_key: r2Key,
+    cover_url: sourceUrl,
+    ...rest
+  } = row;
+  const coverUrl =
+    assetId && r2Key && context.env.ASSETS
+      ? `${new URL(context.req.url).origin}/v1/assets/${encodeURIComponent(assetId)}`
+      : (sourceUrl ?? null);
+  return { ...rest, cover_url: coverUrl } as Omit<
+    T,
+    "asset_id" | "cover_r2_key"
+  > & { cover_url: string | null };
+}
 
 publicRead.get("/health", async (context) => {
   const result = await context.env.DB.prepare("SELECT 1 AS ok").first<{
@@ -40,6 +66,57 @@ publicRead.get("/health", async (context) => {
       environment: context.env.ENVIRONMENT,
     },
   });
+});
+
+publicRead.get("/assets/:id", async (context) => {
+  if (!context.env.ASSETS) {
+    return context.json(
+      {
+        error: {
+          code: "ASSET_STORAGE_UNAVAILABLE",
+          message: "Treez asset storage is not enabled yet.",
+        },
+      },
+      503,
+    );
+  }
+
+  const asset = await context.env.DB.prepare(
+    "SELECT r2_key FROM assets WHERE id = ?",
+  )
+    .bind(context.req.param("id"))
+    .first<{ r2_key: string | null }>();
+  if (!asset?.r2_key) {
+    return context.json(
+      {
+        error: {
+          code: "ASSET_NOT_FOUND",
+          message: "The requested Treez asset does not exist.",
+        },
+      },
+      404,
+    );
+  }
+
+  const object = await context.env.ASSETS.get(asset.r2_key);
+  if (!object) {
+    return context.json(
+      {
+        error: {
+          code: "ASSET_OBJECT_NOT_FOUND",
+          message: "The requested Treez asset has not been archived.",
+        },
+      },
+      404,
+    );
+  }
+
+  const headers = new Headers({
+    "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+    ETag: object.httpEtag,
+  });
+  object.writeHttpMetadata(headers);
+  return new Response(object.body, { headers });
 });
 
 publicRead.get("/entities", async (context) => {
@@ -96,7 +173,8 @@ publicRead.get("/entities", async (context) => {
   const [itemsResult, countRow] = await context.env.DB.batch([
     context.env.DB.prepare(
       `SELECT e.id, e.domain, e.kind, e.name, e.description, e.release_date,
-                e.published_at, a.source_url AS cover_url,
+                e.published_at, a.id AS asset_id, a.r2_key AS cover_r2_key,
+                a.source_url AS cover_url,
                 COALESCE(ers.rating_count, 0) AS rating_count,
                 ers.average_score
          ${from}
@@ -111,7 +189,9 @@ publicRead.get("/entities", async (context) => {
   const count =
     (countRow.results[0] as { total: number } | undefined)?.total ?? 0;
   return context.json({
-    data: itemsResult.results as EntityRow[],
+    data: (itemsResult.results as CoverRow[]).map((row) =>
+      withResolvedCover(context, row),
+    ) as EntityRow[],
     meta: { total: count, limit, offset },
   });
 });
@@ -119,7 +199,8 @@ publicRead.get("/entities", async (context) => {
 publicRead.get("/entities/:id", async (context) => {
   const id = context.req.param("id");
   const entity = await context.env.DB.prepare(
-    `SELECT e.*, a.source_url AS cover_url,
+    `SELECT e.*, a.id AS asset_id, a.r2_key AS cover_r2_key,
+            a.source_url AS cover_url,
             COALESCE(ers.rating_count, 0) AS rating_count,
             ers.average_score
      FROM entities e
@@ -182,7 +263,7 @@ publicRead.get("/entities/:id", async (context) => {
 
   return context.json({
     data: {
-      ...entity,
+      ...withResolvedCover(context, entity as CoverRow),
       metadata: metadata.results,
       aliases: aliases.results,
       relations: relations.results,
@@ -201,6 +282,7 @@ publicRead.get("/search", async (context) => {
 
   const result = await context.env.DB.prepare(
     `SELECT e.id, e.domain, e.kind, e.name, e.release_date,
+            a.id AS asset_id, a.r2_key AS cover_r2_key,
             a.source_url AS cover_url,
             COALESCE(ers.rating_count, 0) AS rating_count,
             ers.average_score
@@ -232,7 +314,9 @@ publicRead.get("/search", async (context) => {
     .all();
 
   return context.json({
-    data: result.results,
+    data: (result.results as CoverRow[]).map((row) =>
+      withResolvedCover(context, row),
+    ),
     meta: { total: result.results.length },
   });
 });
@@ -266,7 +350,14 @@ async function profileResponse(
       `SELECT r.id, r.score_tenths / 10.0 AS score, r.comment,
                 r.commented_at, r.rated_at,
                 e.id AS entity_id, e.name, e.domain, e.kind,
-                a.source_url AS cover_url
+                a.id AS asset_id, a.r2_key AS cover_r2_key,
+                a.source_url AS cover_url,
+                COALESCE((
+                  SELECT json_group_array(json_object('slug', t.slug, 'name', t.name))
+                  FROM rating_tags rt JOIN tags t ON t.id = rt.tag_id
+                  WHERE rt.rating_id = r.id
+                  ORDER BY rt.position
+                ), '[]') AS tags_json
          FROM ratings r
          JOIN entities e ON e.id = r.entity_id
          LEFT JOIN assets a ON a.id = e.cover_asset_id
@@ -295,7 +386,14 @@ async function profileResponse(
   return context.json({
     data: {
       profile,
-      ratings: ratings.results,
+      ratings: ratings.results.map((rating) => {
+        const row = rating as CoverRow & { tags_json: string };
+        const { tags_json: tagsJson, ...rest } = row;
+        return {
+          ...withResolvedCover(context, rest),
+          tags: JSON.parse(tagsJson),
+        };
+      }),
       domains: domains.results,
       tags: tags.results,
     },
@@ -321,6 +419,7 @@ publicRead.get("/home", async (context) => {
   const [recent, acclaimed, domains] = await context.env.DB.batch([
     context.env.DB.prepare(
       `SELECT e.id, e.name, e.domain, e.kind, e.published_at,
+              a.id AS asset_id, a.r2_key AS cover_r2_key,
               a.source_url AS cover_url,
               COALESCE(ers.rating_count, 0) AS rating_count,
               ers.average_score
@@ -332,6 +431,7 @@ publicRead.get("/home", async (context) => {
     ),
     context.env.DB.prepare(
       `SELECT e.id, e.name, e.domain, e.kind,
+              a.id AS asset_id, a.r2_key AS cover_r2_key,
               a.source_url AS cover_url,
               ers.rating_count, ers.average_score
        FROM entities e
@@ -350,8 +450,12 @@ publicRead.get("/home", async (context) => {
 
   return context.json({
     data: {
-      recent: recent.results,
-      acclaimed: acclaimed.results,
+      recent: (recent.results as CoverRow[]).map((row) =>
+        withResolvedCover(context, row),
+      ),
+      acclaimed: (acclaimed.results as CoverRow[]).map((row) =>
+        withResolvedCover(context, row),
+      ),
       domains: domains.results,
     },
   });

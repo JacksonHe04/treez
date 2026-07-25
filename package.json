@@ -16,7 +16,9 @@
     "check:worker": "wrangler types --check",
     "db:migrate:local": "wrangler d1 migrations apply treez-production --local",
     "db:migrate:remote": "wrangler d1 migrations apply treez-production --remote --env production",
-    "import:notion:dry-run": "tsx scripts/import-notion.ts"
+    "import:notion:dry-run": "tsx scripts/import-notion.ts",
+    "assets:r2:dry-run": "tsx scripts/backfill-r2-assets.ts",
+    "assets:r2:apply": "tsx scripts/backfill-r2-assets.ts --apply"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.9.0",
