@@ -123,9 +123,7 @@ export default function BasicLayout({
             ) : (
               <Button
                 type="primary"
-                onClick={() => {
-                  window.location.href = treezLoginPath(pathname || '/');
-                }}
+                href={treezLoginPath(pathname || '/')}
               >
                 登录 iNon
               </Button>
