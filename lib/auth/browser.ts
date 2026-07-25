@@ -1,5 +1,14 @@
 'use client';
 
+export {
+  treezLoginPath,
+  treezLogoutPath,
+} from './paths';
+import {
+  treezLoginPath,
+  treezLogoutPath,
+} from './paths';
+
 export type TreezBrowserUser = {
   id: string;
   email: string;
@@ -38,12 +47,4 @@ export async function getTreezBrowserUser(): Promise<TreezBrowserUser | null> {
     });
 
   return pendingUser;
-}
-
-export function treezLoginPath(returnTo = '/'): string {
-  return `/api/auth/inon/login?${new URLSearchParams({ returnTo })}`;
-}
-
-export function treezLogoutPath(returnTo = '/'): string {
-  return `/api/auth/inon/logout?${new URLSearchParams({ returnTo })}`;
 }

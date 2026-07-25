@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 
-import { getTreezSso } from '@/lib/auth/inon-sso';
+import { treezLoginPath } from '@/lib/auth/paths';
 
 export default function Signup() {
-  redirect(getTreezSso().loginUrl('/'));
+  redirect(treezLoginPath('/'));
 }
