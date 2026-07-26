@@ -25,7 +25,7 @@
 | `class-variance-authority` | Button、Badge 等组件变体 |
 | `clsx`、`tailwind-merge` | 全站 `cn()` class 合并 |
 | `lucide-react` | 导航、搜索、评分、反馈等一致图标 |
-| `next-themes` | 主题上下文与系统主题协商 |
+| `next-themes` | 固定 Heritage 浅色主题上下文，并让 Sonner 与全站主题保持一致 |
 | `sonner` | 新增、评分和错误反馈 toast |
 | `dayjs` | 用户可读日期及年月筛选 |
 | `tw-animate-css` | shadcn 组件动画 utilities |
@@ -42,4 +42,6 @@
 - `pnpm view shadcn version`：`4.15.0`
 - `pnpm exec shadcn --version`：`4.15.0`
 - 仓库搜索不存在 `antd` 或 `@ant-design/*` import。
+- 根布局由 `ThemeProvider` 明确固定为浅色，系统深色偏好不会让 toast 与
+  Heritage 页面产生视觉割裂。
 - `pnpm run lint`、`pnpm run check`、`pnpm run build` 用于最终验收。

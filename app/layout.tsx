@@ -48,6 +48,7 @@ export default async function RootLayout({
       lang="zh-CN"
       data-scroll-behavior="smooth"
       className={cn(sans.variable, editorial.variable, handwritten.variable)}
+      suppressHydrationWarning
     >
       <body>
         <Providers>
