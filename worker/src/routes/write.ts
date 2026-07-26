@@ -273,22 +273,24 @@ signedWrite.put(
       ).bind(ratingId),
     ];
 
-    input.tags.forEach((name, position) => {
+    for (const [position, name] of input.tags.entries()) {
       const normalized = normalizeName(name);
-      const tagId = `tag_${slugify(normalized)}`;
+      const tagHash = await hashText(normalized);
+      const tagId = `tag_${tagHash}`;
+      const tagSlug = `${slugify(name)}-${tagHash.slice(0, 10)}`;
       statements.push(
         context.env.DB.prepare(
           `INSERT INTO tags (
                id, slug, name, normalized_name, created_by
              ) VALUES (?, ?, ?, ?, ?)
              ON CONFLICT(normalized_name) DO UPDATE SET name = excluded.name`,
-        ).bind(tagId, slugify(name), name, normalized, user.id),
+        ).bind(tagId, tagSlug, name, normalized, user.id),
         context.env.DB.prepare(
           `INSERT INTO rating_tags (rating_id, tag_id, position)
              SELECT ?, id, ? FROM tags WHERE normalized_name = ?`,
         ).bind(ratingId, position, normalized),
       );
-    });
+    }
 
     await context.env.DB.batch(statements);
     const summary = await context.env.DB.prepare(
@@ -481,6 +483,10 @@ signedWrite.post("/assets", async (context) => {
 async function contentChecksum(value: unknown): Promise<string> {
   const encoded = new TextEncoder().encode(JSON.stringify(value));
   return hashHex(encoded.buffer as ArrayBuffer);
+}
+
+async function hashText(value: string): Promise<string> {
+  return hashHex(new TextEncoder().encode(value).buffer as ArrayBuffer);
 }
 
 type ImageAssetResult =
