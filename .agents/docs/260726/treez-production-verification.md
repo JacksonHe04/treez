@@ -11,10 +11,11 @@
 - Web：`https://treez.inon.space`
 - Vercel deployment：`dpl_GTzYa1jTjYQwAAPoi6xbopVFHJtg`
 - Worker：`https://treez-api-production.yingyingdontkill.workers.dev`
-- Worker version：`53e35f5e-a0ea-4c32-b7ab-55447c9c3adb`
+- Worker version：`4facffc5-ec8d-4e8a-87ba-fed282d6f815`
 - D1：`treez-production`
 - D1 ID：`442b52ad-bfb9-46de-8753-2cc09086ee4d`
-- R2：账户尚未启用；Dashboard 要求接受按量付费自动续订条款。
+- Supabase：iNon 项目 `cbesquswcuvzipzldimc`
+- 图床 bucket：`treez-assets`（公开读、服务端密钥写）
 
 ## 验收结果
 
@@ -27,6 +28,7 @@
 | D1 数据 | 通过 | 451 实体、546 关系、222 评分、61 资产、1219 个已核验来源记录 |
 | 导入幂等性 | 通过 | 本地连续应用两次、生产重新应用后业务总数均不增长；外键检查为空 |
 | 导入冲突 | 通过 | 2 组同名候选经云端关系复核后明确保留；D1 无 `open` 冲突 |
+| Supabase 图床 | 通过 | 61/61 张封面、61 个唯一对象、3,000,718 字节；回填 dry-run 候选为 0 |
 | 匿名公共读 | 通过 | 首页、音乐目录、搜索、实体详情、个人档案均返回真实导入数据 |
 | 搜索代理 | 通过 | `/api/treez/search?q=Radiohead` 返回 HTTP 200 与 1 条结果 |
 | 匿名写保护 | 通过 | POST `/api/treez/entities` 返回 HTTP 401，不产生数据 |
@@ -36,7 +38,6 @@
 | 浏览器错误 | 通过 | 无 Next error overlay、无 page error、无 console error |
 | Vercel 运行日志 | 通过 | 发布后 30 分钟内无 error 级日志 |
 | 登录后真实写入 | 待验收 | 不使用虚构数据污染生产库；需要登录用户用真实条目完成一次写入 |
-| R2 封面归档 | 阻塞 | 首次启用需要接受 Cloudflare 计费订阅条款 |
 
 ## 视觉证据
 
@@ -47,11 +48,13 @@
 
 - 2 组同名单曲候选已逐页复核并明确保留为独立来源条目，不做无证据自动合并。
 - 影视、书、游戏暂无 Notion 结构化初始数据，产品新增路径与空状态已经完整实现。
-- R2 启用前，封面使用原始来源 URL；无有效 URL 时使用一致的 Heritage 占位封面。
+- 61 张已有封面均已归档到 Supabase；无封面的实体继续使用一致的 Heritage 占位封面。
 
 ## 回滚
 
 - Vercel：从 deployment `dpl_GTzYa1jTjYQwAAPoi6xbopVFHJtg` 回滚至前一生产部署。
 - Worker：在 Cloudflare Versions 中将上一版本恢复为 100% 流量。
 - D1：迁移只追加；数据恢复使用导入前导出或重新运行幂等导入器。
+- Supabase：对象 key 使用内容摘要；回滚 Worker/D1 时保留对象即可，不需要删除。
 - 密钥：Vercel `TREEZ_API_SECRET` 与 Worker `WRITE_SIGNING_SECRET` 必须成对轮换。
+- 图床密钥：Worker `SUPABASE_SECRET_KEY` 仅保存于 Cloudflare Secret，轮换后重新写入。
