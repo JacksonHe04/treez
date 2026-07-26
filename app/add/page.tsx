@@ -7,7 +7,11 @@ export const dynamic = "force-dynamic";
 export default async function AddPage({
   searchParams,
 }: {
-  searchParams: Promise<{ domain?: Domain; kind?: EntityKind }>;
+  searchParams: Promise<{
+    domain?: Domain;
+    kind?: EntityKind;
+    name?: string;
+  }>;
 }) {
   const query = await searchParams;
   const viewer = await getOptionalTreezViewer();
@@ -28,6 +32,7 @@ export default async function AddPage({
       <AddEntityForm
         initialDomain={domain}
         initialKind={kind}
+        initialName={query.name?.slice(0, 240)}
         viewer={Boolean(viewer)}
       />
     </main>

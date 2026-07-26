@@ -32,10 +32,12 @@ const DRAFT_KEY = "treez:add-entity-draft";
 export function AddEntityForm({
   initialDomain = "music",
   initialKind,
+  initialName = "",
   viewer,
 }: {
   initialDomain?: Domain;
   initialKind?: EntityKind;
+  initialName?: string;
   viewer: boolean;
 }) {
   const router = useRouter();
@@ -46,7 +48,7 @@ export function AddEntityForm({
       ? initialKind
       : domainConfig.kinds[0].id,
   );
-  const [name, setName] = useState("");
+  const [name, setName] = useState(initialName);
   const [description, setDescription] = useState("");
   const [releaseDate, setReleaseDate] = useState("");
   const [relationQuery, setRelationQuery] = useState("");
@@ -110,7 +112,7 @@ export function AddEntityForm({
         saved = {
           domain: nextDomain,
           kind: nextKind,
-          name: draft.name ?? "",
+          name: draft.name ?? initialName,
           description: draft.description ?? "",
           releaseDate: draft.releaseDate ?? "",
           relations: Array.isArray(draft.relations) ? draft.relations : [],
@@ -137,7 +139,7 @@ export function AddEntityForm({
       }
       setDraftReady(true);
     });
-  }, [initialDomain]);
+  }, [initialDomain, initialName]);
 
   useEffect(() => {
     if (!draftReady) return;
@@ -190,7 +192,13 @@ export function AddEntityForm({
       const response = await fetch(
         `/api/treez/search?${new URLSearchParams({ q: relationQuery })}`,
       );
-      const payload = (await response.json()) as { data: EntitySummary[] };
+      const payload = (await response.json()) as {
+        data?: EntitySummary[];
+        error?: { message?: string };
+      };
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error?.message ?? "关联条目搜索失败。");
+      }
       setRelationResults(
         payload.data.filter(
           (entity) =>
@@ -199,6 +207,11 @@ export function AddEntityForm({
             allowedRelatedKinds.includes(entity.kind),
         ),
       );
+    } catch (error) {
+      setRelationResults([]);
+      toast.error("暂时无法搜索关联条目", {
+        description: error instanceof Error ? error.message : "请稍后重试。",
+      });
     } finally {
       setSearching(false);
       setRelationSearchDone(true);
@@ -242,7 +255,11 @@ export function AddEntityForm({
         name: relationName,
         kind: relationKind,
       };
-      setRelations((current) => [...current, created]);
+      setRelations((current) =>
+        current.some((item) => item.id === created.id)
+          ? current
+          : [...current, created],
+      );
       setRelationResults([]);
       setRelationQuery("");
       setRelationSearchDone(false);
@@ -427,7 +444,12 @@ export function AddEntityForm({
                 }
               }}
             />
-            <Button type="button" variant="outline" onClick={searchRelations}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={searchRelations}
+              disabled={searching}
+            >
               {searching ? (
                 <LoaderCircle aria-hidden="true" className="animate-spin" />
               ) : (
