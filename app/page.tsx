@@ -14,7 +14,11 @@ import { ScoreModeToggle, ScoreValue } from "@/components/treez/score";
 import { Button } from "@/components/ui/button";
 import { getOptionalTreezViewer } from "@/lib/auth/viewer";
 import { treezLoginPath } from "@/lib/auth/paths";
-import { getProfileById, getPublicHome } from "@/lib/treez/api";
+import {
+  getProfileById,
+  getPublicHome,
+  isTreezApiNotFound,
+} from "@/lib/treez/api";
 import { domainById, domains } from "@/lib/treez/config";
 import { formatDate } from "@/lib/treez/format";
 import { emptyPublicProfile } from "@/lib/treez/profile";
@@ -28,9 +32,12 @@ export default async function HomePage() {
     getOptionalTreezViewer(),
   ]);
   const profile = viewer
-    ? await getProfileById(viewer.session.id).catch(() =>
-        emptyPublicProfile(viewer.session),
-      )
+    ? await getProfileById(viewer.session.id).catch((error: unknown) => {
+        if (isTreezApiNotFound(error)) {
+          return emptyPublicProfile(viewer.session);
+        }
+        throw error;
+      })
     : null;
 
   return (

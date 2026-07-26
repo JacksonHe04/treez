@@ -14,7 +14,11 @@ import { ScoreModeToggle, ScoreValue } from "@/components/treez/score";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { getOptionalTreezViewer } from "@/lib/auth/viewer";
-import { getEntity, getProfileById } from "@/lib/treez/api";
+import {
+  getEntity,
+  getProfileById,
+  isTreezApiNotFound,
+} from "@/lib/treez/api";
 import { domainById, kindLabels } from "@/lib/treez/config";
 import { formatCount, formatDate } from "@/lib/treez/format";
 
@@ -44,13 +48,19 @@ export default async function EntityPage({
 }) {
   const { id } = await params;
   const [entity, viewer] = await Promise.all([
-    getEntity(id).catch(() => null),
+    getEntity(id).catch((error: unknown) => {
+      if (isTreezApiNotFound(error)) return null;
+      throw error;
+    }),
     getOptionalTreezViewer(),
   ]);
   if (!entity) notFound();
 
   const viewerProfile = viewer
-    ? await getProfileById(viewer.session.id).catch(() => null)
+    ? await getProfileById(viewer.session.id).catch((error: unknown) => {
+        if (isTreezApiNotFound(error)) return null;
+        throw error;
+      })
     : null;
   const initialRating = viewerProfile
     ? entity.ratings.find(

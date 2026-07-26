@@ -15,6 +15,21 @@ type ApiErrorPayload = {
   error?: { code?: string; message?: string };
 };
 
+export class TreezApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code?: string,
+  ) {
+    super(message);
+    this.name = "TreezApiError";
+  }
+}
+
+export function isTreezApiNotFound(error: unknown): boolean {
+  return error instanceof TreezApiError && error.status === 404;
+}
+
 async function treezFetch<T>(pathname: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${TREEZ_API_URL}${pathname}`, {
     ...init,
@@ -28,9 +43,11 @@ async function treezFetch<T>(pathname: string, init?: RequestInit): Promise<T> {
     const payload = (await response
       .json()
       .catch(() => null)) as ApiErrorPayload | null;
-    throw new Error(
+    throw new TreezApiError(
       payload?.error?.message ??
         `Treez API request failed with ${response.status}.`,
+      response.status,
+      payload?.error?.code,
     );
   }
   return (await response.json()) as T;

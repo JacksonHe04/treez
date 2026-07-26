@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { ProfileView } from "@/components/treez/profile-view";
-import { getProfile } from "@/lib/treez/api";
+import { getProfile, isTreezApiNotFound } from "@/lib/treez/api";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +27,10 @@ export default async function PublicProfilePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const profile = await getProfile(slug).catch(() => null);
+  const profile = await getProfile(slug).catch((error: unknown) => {
+    if (isTreezApiNotFound(error)) return null;
+    throw error;
+  });
   if (!profile) notFound();
   return <ProfileView data={profile} />;
 }
