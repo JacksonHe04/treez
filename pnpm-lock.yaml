@@ -12,8 +12,8 @@ importers:
         specifier: ^0.9.0
         version: 0.9.0(hono@4.12.32)(zod@4.4.3)
       '@inon-ai/inon-sso':
-        specifier: 0.1.0
-        version: 0.1.0
+        specifier: 0.1.1
+        version: 0.1.1
       '@reduxjs/toolkit':
         specifier: ^2.7.0
         version: 2.12.0(react-redux@9.3.0(@types/react@19.2.17)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
@@ -836,8 +836,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@inon-ai/inon-sso@0.1.0':
-    resolution: {integrity: sha512-6b10HwZ3HDzZV0jm8GnmkU4iofaVKAHSXMd8Amd4WANOiQN1PEchN514/YViUPQx0lWoRUjYHkevCRk6NRlReg==}
+  '@inon-ai/inon-sso@0.1.1':
+    resolution: {integrity: sha512-Rtea7of6pfYtZ2nEYSWs04QLd0yp6qW98c6z6ClhwOnNB99ES627JTxtMWR6WCyNsN2ISuyUR1XMxlL71Rl03g==}
     engines: {node: '>=20.19.0'}
 
   '@jridgewell/gen-mapping@0.3.13':
@@ -4839,7 +4839,7 @@ snapshots:
   '@img/sharp-win32-x64@0.35.2':
     optional: true
 
-  '@inon-ai/inon-sso@0.1.0':
+  '@inon-ai/inon-sso@0.1.1':
     dependencies:
       jose: 6.2.4
 
