@@ -9,9 +9,9 @@
 ## 生产资源
 
 - Web：`https://treez.inon.space`
-- Vercel deployment：`dpl_7oaupJ6BqHoe4c2GTqvKsFPccnWw`
+- Vercel deployment：`dpl_GTzYa1jTjYQwAAPoi6xbopVFHJtg`
 - Worker：`https://treez-api-production.yingyingdontkill.workers.dev`
-- Worker version：`adde95ec-9b72-45cc-a5eb-ba3129205714`
+- Worker version：`53e35f5e-a0ea-4c32-b7ab-55447c9c3adb`
 - D1：`treez-production`
 - D1 ID：`442b52ad-bfb9-46de-8753-2cc09086ee4d`
 - R2：账户尚未启用；Dashboard 要求接受按量付费自动续订条款。
@@ -22,7 +22,9 @@
 | --- | --- | --- |
 | Production build | 通过 | Next.js 16.2.9 构建、TypeScript、19 个 App Router 路由成功 |
 | Worker | 通过 | 健康检查 `status=ok`；profile by-id 返回 222 条评分 |
-| D1 数据 | 通过 | 451 实体、546 关系、222 评分、1219 来源记录 |
+| Notion 交叉验证 | 通过 | 四库 472 个页面的云端/本地 ID 集合完整一致，无缺失或重复 |
+| D1 数据 | 通过 | 451 实体、546 关系、222 评分、61 资产、1219 个已核验来源记录 |
+| 导入幂等性 | 通过 | 本地连续应用两次、生产重新应用后业务总数均不增长；外键检查为空 |
 | 匿名公共读 | 通过 | 首页、音乐目录、搜索、实体详情、个人档案均返回真实导入数据 |
 | 搜索代理 | 通过 | `/api/treez/search?q=Radiohead` 返回 HTTP 200 与 1 条结果 |
 | 匿名写保护 | 通过 | POST `/api/treez/entities` 返回 HTTP 401，不产生数据 |
@@ -47,7 +49,7 @@
 
 ## 回滚
 
-- Vercel：从 deployment `dpl_7oaupJ6BqHoe4c2GTqvKsFPccnWw` 回滚至前一生产部署。
+- Vercel：从 deployment `dpl_GTzYa1jTjYQwAAPoi6xbopVFHJtg` 回滚至前一生产部署。
 - Worker：在 Cloudflare Versions 中将上一版本恢复为 100% 流量。
 - D1：迁移只追加；数据恢复使用导入前导出或重新运行幂等导入器。
 - 密钥：Vercel `TREEZ_API_SECRET` 与 Worker `WRITE_SIGNING_SECRET` 必须成对轮换。

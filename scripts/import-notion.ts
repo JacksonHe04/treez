@@ -511,8 +511,11 @@ function renderSql(plan: ImportPlan, sourceRootPath: string): string {
             ${`pending/notion/${coverChecksum}`}, ${entity.coverUrl},
             ${coverChecksum}, ${`${entity.page.title} 封面`}
           )
-          ON CONFLICT(r2_key) DO UPDATE SET
+          ON CONFLICT(id) DO UPDATE SET
+            entity_id = excluded.entity_id,
+            r2_key = excluded.r2_key,
             source_url = excluded.source_url,
+            checksum = excluded.checksum,
             alt_text = excluded.alt_text;
         `,
         sql`
@@ -529,7 +532,7 @@ function renderSql(plan: ImportPlan, sourceRootPath: string): string {
         recordId: entity.id,
         page: entity.page,
         batchId: plan.batchId,
-        verificationStatus: entity.kind === "album" ? "verified" : "pending",
+        verificationStatus: verificationStatusForPage(plan, entity.page),
         sourceRootPath,
       }),
     );
@@ -554,11 +557,10 @@ function renderSql(plan: ImportPlan, sourceRootPath: string): string {
         page: relation.sourcePage,
         sourceIdSuffix: `relation:${relation.type}:${relation.toId}`,
         batchId: plan.batchId,
-        verificationStatus:
-          relation.sourcePage.parentId ===
-          plan.cloudManifest.databases.album.pageId
-            ? "verified"
-            : "pending",
+        verificationStatus: verificationStatusForPage(
+          plan,
+          relation.sourcePage,
+        ),
         sourceRootPath,
       }),
     );
@@ -599,11 +601,10 @@ function renderSql(plan: ImportPlan, sourceRootPath: string): string {
         page: rating.sourcePage,
         sourceIdSuffix: "rating",
         batchId: plan.batchId,
-        verificationStatus:
-          rating.sourcePage.parentId ===
-          plan.cloudManifest.databases.album.pageId
-            ? "verified"
-            : "pending",
+        verificationStatus: verificationStatusForPage(
+          plan,
+          rating.sourcePage,
+        ),
         sourceRootPath,
       }),
     );
@@ -703,6 +704,14 @@ function renderReport(plan: ImportPlan, sourceRootPath: string): string {
               `- **${conflict.type}**：${conflict.message}（${conflict.sourceIds.join(", ")}）`,
           )
           .join("\n");
+  const verificationNotes =
+    plan.cloudManifest.limitations.length === 0
+      ? `- 四个来源数据库均已完成数量、唯一性和完整页面 ID 集合对照。
+- 本批次的实体、关系和评分来源记录均可标记为 \`verified\`。`
+      : `${plan.cloudManifest.limitations.map((item) => `- ${item}`).join("\n")}
+
+仅完整通过云端 ID 对照的数据源会标记为 \`verified\`；其余来源保持
+\`pending\`，不会把数量一致误报成完整核验。`;
 
   return `# Treez Notion 导入 Dry-run
 
@@ -739,13 +748,9 @@ ${conflicts}
 同名条目不会自动合并。它们以 Notion 页面 ID 保持独立，并保留创作者关系供
 后续判断；本轮没有社区合并机制。
 
-## 核验限制
+## 核验状态
 
-${plan.cloudManifest.limitations.map((item) => `- ${item}`).join("\n")}
-
-专辑的完整云端 ID 集合已核验，因此导入来源状态为 \`verified\`。艺术家、单曲
-和评分在完成下一轮实时 ID 对照前保持 \`pending\`，即使本地与云端数量一致也
-不会被错误标记为完整核验。
+${verificationNotes}
 
 ## 幂等策略
 
@@ -762,6 +767,22 @@ ${plan.cloudManifest.limitations.map((item) => `- ${item}`).join("\n")}
 3. 应用 \`apply.sql\` 后核对实体、关系、评分、孤立外键和批次摘要。
 4. 使用相同输入重跑并确认所有业务总数不增长。
 `;
+}
+
+function verificationStatusForPage(
+  plan: ImportPlan,
+  page: NotionPage,
+): VerificationStatus {
+  const kind = (Object.keys(plan.cloudManifest.databases) as CloudDatabaseKind[])
+    .find(
+      (candidate) =>
+        plan.cloudManifest.databases[candidate].pageId === page.parentId,
+    );
+
+  return kind &&
+    plan.cloudManifest.databases[kind].idVerification === "complete"
+    ? "verified"
+    : "pending";
 }
 
 function summaryData(plan: ImportPlan) {
