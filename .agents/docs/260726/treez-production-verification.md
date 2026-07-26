@@ -21,6 +21,7 @@
 | 边界 | 状态 | 证据 |
 | --- | --- | --- |
 | Production build | 通过 | Next.js 16.2.9 构建、TypeScript、19 个 App Router 路由成功 |
+| 技术栈职责 | 通过 | 无 Ant Design；shadcn 4.15.0 为当前 latest，运行依赖均有明确职责 |
 | Worker | 通过 | 健康检查 `status=ok`；profile by-id 返回 222 条评分 |
 | Notion 交叉验证 | 通过 | 四库 472 个页面的云端/本地 ID 集合完整一致，无缺失或重复 |
 | D1 数据 | 通过 | 451 实体、546 关系、222 评分、61 资产、1219 个已核验来源记录 |
