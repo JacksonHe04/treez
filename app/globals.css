@@ -333,9 +333,10 @@ h3 {
   display: inline-block;
   margin-inline: 0.1em;
   color: var(--brand);
-  font-family: var(--font-handwritten), cursive;
-  font-size: 0.86em;
-  font-weight: 500;
+  font-family: inherit;
+  font-size: inherit;
+  font-style: normal;
+  font-weight: inherit;
 }
 
 .home-hero__intro {

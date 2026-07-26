@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Caveat, Cormorant_Garamond, Geist } from "next/font/google";
+import { Cormorant_Garamond, Geist } from "next/font/google";
 
 import { SiteHeader } from "@/components/treez/site-header";
 import { Toaster } from "@/components/ui/sonner";
@@ -17,20 +17,15 @@ const editorial = Cormorant_Garamond({
   subsets: ["latin"],
   variable: "--font-editorial",
 });
-const handwritten = Caveat({
-  subsets: ["latin"],
-  variable: "--font-handwritten",
-});
-
 export const metadata: Metadata = {
   metadataBase: new URL("https://treez.inon.space"),
   title: {
-    default: "Treez — 个人鉴赏志",
+    default: "Treez — 树脂",
     template: "%s — Treez",
   },
   description: "记录音乐、影视、书籍与游戏，在公开档案中看见自己的审美轨迹。",
   openGraph: {
-    title: "Treez — 个人鉴赏志",
+    title: "Treez — 树脂",
     description: "听过、看过、读过、玩过，然后留下自己的判断。",
     type: "website",
     locale: "zh_CN",
@@ -47,7 +42,7 @@ export default async function RootLayout({
     <html
       lang="zh-CN"
       data-scroll-behavior="smooth"
-      className={cn(sans.variable, editorial.variable, handwritten.variable)}
+      className={cn(sans.variable, editorial.variable)}
       suppressHydrationWarning
     >
       <body>
@@ -65,7 +60,7 @@ export default async function RootLayout({
           {children}
           <footer className="site-footer">
             <div className="page-shell">
-              <p>Treez / 一份持续生长的个人鉴赏志</p>
+              <p>Treez / 树脂，一份持续生长的个人鉴赏档案</p>
               <p>Music · Film · Books · Games</p>
             </div>
           </footer>

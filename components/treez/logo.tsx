@@ -10,7 +10,7 @@ export function TreezLogo({ className }: { className?: string }) {
       aria-label="Treez 首页"
     >
       <span>Treez</span>
-      <i aria-hidden="true">鉴赏志</i>
+      <i aria-hidden="true">树脂</i>
     </Link>
   );
 }
