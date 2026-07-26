@@ -15,7 +15,6 @@ export function profileStatement(
       `INSERT INTO profiles (id, slug, display_name)
        VALUES (?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
-         display_name = excluded.display_name,
          updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`,
     )
     .bind(user.id, slug, displayName);
