@@ -9,9 +9,9 @@
 ## 生产资源
 
 - Web：`https://treez.inon.space`
-- Vercel deployment：`dpl_GTzYa1jTjYQwAAPoi6xbopVFHJtg`
+- Vercel deployment：`dpl_5re6DeEV4m2t6X2GBNkHgUXYu6eZ`
 - Worker：`https://treez-api-production.yingyingdontkill.workers.dev`
-- Worker version：`4facffc5-ec8d-4e8a-87ba-fed282d6f815`
+- Worker version：`47d98b09-e611-4e04-9f9c-beba3b93791a`
 - D1：`treez-production`
 - D1 ID：`442b52ad-bfb9-46de-8753-2cc09086ee4d`
 - Supabase：iNon 项目 `cbesquswcuvzipzldimc`
@@ -31,13 +31,15 @@
 | Supabase 图床 | 通过 | 61/61 张封面、61 个唯一对象、3,000,718 字节；回填 dry-run 候选为 0 |
 | 匿名公共读 | 通过 | 首页、音乐目录、搜索、实体详情、个人档案均返回真实导入数据 |
 | 搜索代理 | 通过 | `/api/treez/search?q=Radiohead` 返回 HTTP 200 与 1 条结果 |
+| 搜索到新增 | 通过 | 生产浏览器验证无结果名称可带入新增页；已有会话草稿时显式搜索名称仍优先 |
 | 匿名写保护 | 通过 | POST `/api/treez/entities` 返回 HTTP 401，不产生数据 |
 | SSO 入口 | 通过 | `/sso/start` 返回 303 至 `inon.space/api/sso/auth/oauth2/authorize` |
+| SSO 会话 | 通过 | 生产浏览器以真实 iNon 会话识别 `@yingyingdontkill`，个人档案返回 222 条导入评分 |
 | 十分制/五星制 | 通过 | 同一页面评分从 `10.0 / 10` 一致切换为 `5.0 / 5` |
 | 移动端 | 通过 | 390×844 无横向溢出，完整导航、首页与卡片流可见 |
 | 浏览器错误 | 通过 | 无 Next error overlay、无 page error、无 console error |
-| Vercel 运行日志 | 通过 | 发布后 30 分钟内无 error 级日志 |
-| 登录后真实写入 | 待验收 | 不使用虚构数据污染生产库；需要登录用户用真实条目完成一次写入 |
+| Vercel 运行日志 | 通过 | 最新生产发布后 1 小时窗口无 runtime error 聚类 |
+| 登录后真实写入 | 待用户确认 | 已在真实《Hibernation》更新表单停驻；公开提交会刷新 `ratedAt`，须用户明确确认 |
 
 ## 视觉证据
 
@@ -52,7 +54,7 @@
 
 ## 回滚
 
-- Vercel：从 deployment `dpl_GTzYa1jTjYQwAAPoi6xbopVFHJtg` 回滚至前一生产部署。
+- Vercel：从 deployment `dpl_5re6DeEV4m2t6X2GBNkHgUXYu6eZ` 回滚至 `dpl_81h3jZaYuQPwtdkWdSYqfbVegvts`。
 - Worker：在 Cloudflare Versions 中将上一版本恢复为 100% 流量。
 - D1：迁移只追加；数据恢复使用导入前导出或重新运行幂等导入器。
 - Supabase：对象 key 使用内容摘要；回滚 Worker/D1 时保留对象即可，不需要删除。
