@@ -683,7 +683,7 @@ h3 {
 .entity-cover {
   display: grid;
   position: relative;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 1;
   place-items: center;
   overflow: hidden;
   border: 1px solid rgb(89 104 82 / 34%);
