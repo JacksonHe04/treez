@@ -102,9 +102,14 @@ export function SiteHeader({ viewer }: { viewer: Viewer }) {
                   <Link href="/add">新增公共条目</Link>
                 </SheetClose>
                 {viewer && (
-                  <SheetClose asChild>
-                    <Link href="/me">我的公开档案</Link>
-                  </SheetClose>
+                  <>
+                    <SheetClose asChild>
+                      <Link href="/me">我的公开档案</Link>
+                    </SheetClose>
+                    <SheetClose asChild>
+                      <Link href={treezLogoutPath("/")}>退出登录</Link>
+                    </SheetClose>
+                  </>
                 )}
               </nav>
             </SheetContent>
