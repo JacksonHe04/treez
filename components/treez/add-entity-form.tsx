@@ -21,13 +21,36 @@ import { treezLoginPath } from "@/lib/auth/paths";
 import {
   domainById,
   domains,
+  kindLabels,
   type Domain,
   type EntityKind,
 } from "@/lib/treez/config";
 import type { EntitySummary } from "@/lib/treez/types";
 
 type SelectedRelation = Pick<EntitySummary, "id" | "name" | "kind">;
+type AddEntityDraft = {
+  domain: Domain;
+  kind: EntityKind;
+  name: string;
+  description: string;
+  releaseDate: string;
+  relationQuery: string;
+  relationKind: EntityKind;
+  relations: SelectedRelation[];
+};
 const DRAFT_KEY = "treez:add-entity-draft";
+
+function relatedKindsFor(domain: Domain, kind: EntityKind): EntityKind[] {
+  if (kind === "song") return ["artist", "album"];
+  if (["album", "film", "book", "game"].includes(kind)) {
+    return domainById[domain].kinds
+      .filter((item) =>
+        ["artist", "director", "author", "studio"].includes(item.id),
+      )
+      .map((item) => item.id);
+  }
+  return [];
+}
 
 export function AddEntityForm({
   initialDomain = "music",
@@ -67,40 +90,17 @@ export function AddEntityForm({
   const [pending, setPending] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
 
-  const allowedRelatedKinds = useMemo(() => {
-    if (kind === "song") return ["artist", "album"];
-    if (["album", "film", "book", "game"].includes(kind)) {
-      return domainConfig.kinds
-        .filter((item) =>
-          ["artist", "director", "author", "studio"].includes(item.id),
-        )
-        .map((item) => item.id);
-    }
-    return [];
-  }, [domainConfig.kinds, kind]);
+  const allowedRelatedKinds = useMemo(
+    () => relatedKindsFor(domain, kind),
+    [domain, kind],
+  );
 
   useEffect(() => {
-    let saved:
-      | {
-          domain: Domain;
-          kind: EntityKind;
-          name: string;
-          description: string;
-          releaseDate: string;
-          relations: SelectedRelation[];
-        }
-      | undefined;
+    let saved: AddEntityDraft | undefined;
     try {
       const stored = window.sessionStorage.getItem(DRAFT_KEY);
       if (stored) {
-        const draft = JSON.parse(stored) as {
-          domain?: Domain;
-          kind?: EntityKind;
-          name?: string;
-          description?: string;
-          releaseDate?: string;
-          relations?: SelectedRelation[];
-        };
+        const draft = JSON.parse(stored) as Partial<AddEntityDraft>;
         const nextDomain = domains.some((item) => item.id === draft.domain)
           ? (draft.domain as Domain)
           : initialDomain;
@@ -109,12 +109,20 @@ export function AddEntityForm({
         )
           ? (draft.kind as EntityKind)
           : domainById[nextDomain].kinds[0].id;
+        const nextRelatedKinds = relatedKindsFor(nextDomain, nextKind);
+        const nextRelationKind =
+          draft.relationKind &&
+          nextRelatedKinds.includes(draft.relationKind as EntityKind)
+            ? (draft.relationKind as EntityKind)
+            : (nextRelatedKinds[0] ?? nextKind);
         saved = {
           domain: nextDomain,
           kind: nextKind,
           name: initialName.trim() || draft.name || "",
           description: draft.description ?? "",
           releaseDate: draft.releaseDate ?? "",
+          relationQuery: draft.relationQuery ?? "",
+          relationKind: nextRelationKind,
           relations: Array.isArray(draft.relations) ? draft.relations : [],
         };
       }
@@ -125,13 +133,8 @@ export function AddEntityForm({
       if (saved) {
         setDomain(saved.domain);
         setKind(saved.kind);
-        setRelationKind(
-          saved.kind === "song"
-            ? "artist"
-            : (domainById[saved.domain].kinds.find((item) =>
-                ["artist", "director", "author", "studio"].includes(item.id),
-              )?.id ?? saved.kind),
-        );
+        setRelationKind(saved.relationKind);
+        setRelationQuery(saved.relationQuery);
         setName(saved.name);
         setDescription(saved.description);
         setReleaseDate(saved.releaseDate);
@@ -151,10 +154,22 @@ export function AddEntityForm({
         name,
         description,
         releaseDate,
+        relationQuery,
+        relationKind,
         relations,
       }),
     );
-  }, [description, domain, draftReady, kind, name, relations, releaseDate]);
+  }, [
+    description,
+    domain,
+    draftReady,
+    kind,
+    name,
+    relationKind,
+    relationQuery,
+    relations,
+    releaseDate,
+  ]);
 
   function changeDomain(value: Domain) {
     setDomain(value);
@@ -171,14 +186,7 @@ export function AddEntityForm({
 
   function changeKind(value: EntityKind) {
     setKind(value);
-    const nextAllowed: EntityKind[] =
-      value === "song"
-        ? ["artist", "album"]
-        : domainById[domain].kinds
-            .filter((item) =>
-              ["artist", "director", "author", "studio"].includes(item.id),
-            )
-            .map((item) => item.id);
+    const nextAllowed = relatedKindsFor(domain, value);
     setRelationKind(nextAllowed[0] ?? value);
     setRelations([]);
     setRelationResults([]);
@@ -207,14 +215,15 @@ export function AddEntityForm({
             allowedRelatedKinds.includes(entity.kind),
         ),
       );
+      setRelationSearchDone(true);
     } catch (error) {
       setRelationResults([]);
+      setRelationSearchDone(false);
       toast.error("暂时无法搜索关联条目", {
         description: error instanceof Error ? error.message : "请稍后重试。",
       });
     } finally {
       setSearching(false);
-      setRelationSearchDone(true);
     }
   }
 
@@ -501,7 +510,7 @@ export function AddEntityForm({
                   >
                     <span>
                       {result.name}
-                      <small>{result.kind}</small>
+                      <small>{kindLabels[result.kind]}</small>
                     </span>
                     {selected && <Check aria-hidden="true" />}
                   </button>
