@@ -857,6 +857,33 @@ h3 {
   gap: 1.5rem;
 }
 
+.directory-search {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--ink);
+  background: var(--paper-white);
+  padding: 0.35rem 0.5rem 0.35rem 1rem;
+  gap: 0.5rem;
+}
+
+.directory-search > svg {
+  width: 1rem;
+  color: var(--brand);
+}
+
+.directory-search input[type="search"] {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.directory-search input[type="search"]:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
 .filter-links,
 .sort-links {
   display: flex;
@@ -1763,6 +1790,15 @@ h3 {
   .directory-toolbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .directory-search {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .directory-search > a {
+    grid-column: 2 / -1;
+    justify-self: start;
   }
 
   .entity-hero {
