@@ -112,7 +112,7 @@ export function AddEntityForm({
         saved = {
           domain: nextDomain,
           kind: nextKind,
-          name: draft.name ?? initialName,
+          name: initialName.trim() || draft.name || "",
           description: draft.description ?? "",
           releaseDate: draft.releaseDate ?? "",
           relations: Array.isArray(draft.relations) ? draft.relations : [],
