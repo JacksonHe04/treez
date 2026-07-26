@@ -14,7 +14,7 @@
 
 - [x] 创建 Treez D1 数据库。
 - [x] 建立编号迁移并在本地、远端应用。
-- [ ] 启用并创建 Treez R2 bucket。
+- [x] 在 Supabase iNon 项目创建公开读、服务端写的 `treez-assets` bucket。
 - [x] 实现 Hono Worker 的公共读、签名写、聚合与错误响应。
 - [x] 完成本地绑定、类型生成、lint、类型检查和 Worker dry-run。
 - [x] 部署 Worker，验证生产健康检查与查询。
@@ -33,7 +33,7 @@
 - [x] 实现显式字段映射、去重、冲突和 source checksum。
 - [x] 输出 dry-run JSON/Markdown 报告。
 - [x] 处理所有冲突与孤立关系后导入生产 D1。
-- [ ] 下载并去重封面到 R2。
+- [ ] 下载并去重封面到 Supabase Storage。
 - [x] 重跑验证幂等性和生产计数。
 
 ## 阶段 5：Treez 产品界面

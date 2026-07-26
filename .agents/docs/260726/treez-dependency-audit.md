@@ -18,6 +18,7 @@
 | `next`、`react`、`react-dom` | App Router 页面、Route Handler、服务端与客户端渲染 |
 | `@inon-ai/inon-sso` | iNon SSO 登录、回调、会话与用户身份 |
 | `hono`、`@hono/zod-validator` | Cloudflare Worker API 与请求校验 |
+| `@supabase/supabase-js` | Worker 将封面写入 iNon 项目的 Supabase Storage |
 | `zod` | Worker 和应用写入边界的统一 schema |
 | `@reduxjs/toolkit`、`react-redux` | 十分制/五星制显示偏好的全站统一状态 |
 | `radix-ui` | shadcn 交互组件的无障碍 primitives |

@@ -28,14 +28,14 @@ flowchart TB
   Next -->|"校验 iNon 会话"| SSO["iNon SSO"]
   Next -->|"签名写请求"| Worker
   Worker --> D1["Cloudflare D1"]
-  Worker --> R2["Cloudflare R2"]
+  Worker --> Storage["Supabase iNon / treez-assets"]
   Local["本地 Notion 导出"] --> Importer["幂等导入器"]
   Cloud["云端 Notion（只读）"] --> Importer
   Importer -->|"签名导入请求或 D1 迁移任务"| Worker
 ```
 
 - Vercel 继续承载现有 Next.js App Router 应用和 `treez.inon.space`。
-- Worker 是公开业务 API，并直接绑定 D1/R2。
+- Worker 是公开业务 API，绑定 D1，并以服务端密钥写入 Supabase Storage。
 - 浏览器只能执行公开读；写操作必须先到 Next.js Route Handler。
 - Next.js 使用现有 `@inon-ai/inon-sso` 服务端能力识别用户。
 - Next.js 对内部写请求签名，Worker 校验时间戳、用户声明、请求体摘要和 HMAC。
@@ -91,7 +91,7 @@ D1 只保存 Treez 展示所需的 iNon 用户投影，不复制密码、会话�
 - `source_records`：本地 Notion、云端 Notion或用户新增的来源、源 ID、路径、
   checksum、校验状态。
 - `import_conflicts`：冲突类型、候选记录、处理状态与说明。
-- `assets`：R2 key、原始 URL、内容类型、替代文字和实体归属。
+- `assets`：Supabase object key、原始 URL、内容类型、替代文字和实体归属。
 
 ## API 表面
 
@@ -141,5 +141,6 @@ D1 只保存 Treez 展示所需的 iNon 用户投影，不复制密码、会话�
 - D1 变更只通过编号迁移执行；应用发布必须兼容当前和上一个 schema。
 - Worker 先 dry-run，再发布版本；保留可回滚的前一版本。
 - Vercel 生产发布在 Worker 健康检查和迁移验证之后进行。
-- R2 对象使用内容摘要 key，重复导入不会重复上传。
+- Supabase 对象使用内容摘要 key，重复导入不会重复上传；公共 bucket 只开放读取，
+  写入必须经过签名 Worker。
 - 部署记录、资源 ID、迁移结果、生产 URL 与回滚验证写入当天 `.agents/docs/`。

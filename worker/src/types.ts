@@ -18,10 +18,12 @@ export type TreezUser = {
 
 export type Env = {
   DB: D1Database;
-  ASSETS?: R2Bucket;
   ENVIRONMENT: "development" | "production";
   CORS_ORIGINS: string;
   WRITE_SIGNING_SECRET: string;
+  SUPABASE_URL: string;
+  SUPABASE_SECRET_KEY: string;
+  SUPABASE_STORAGE_BUCKET: string;
 };
 
 export type AppVariables = {

@@ -12,7 +12,7 @@ SSO 登录后，可以新增公共条目，并以十分制或五星半星制留�
 - 最新 shadcn/ui（Radix）与 Treez Heritage 设计系统
 - Cloudflare Worker + Hono 公共 API
 - Cloudflare D1 业务数据
-- Cloudflare R2 封面与附件（启用与回填进行中）
+- Supabase iNon 项目的 `treez-assets` 图床
 - Vercel 承载 `treez.inon.space`
 - iNon SSO 负责登录；Next.js 校验会话后签名调用 Worker 写接口
 
@@ -25,7 +25,8 @@ pnpm run dev:worker
 pnpm run dev
 ```
 
-复制 `.env.example` 为 `.env.local` 并填入本地所需环境变量。密钥不得提交。
+复制 `.env.example` 为 `.env.local`，并复制 `.dev.vars.example` 为
+`.dev.vars`，分别填入 Next.js 与 Worker 本地密钥。密钥不得提交。
 
 ## 数据导入
 

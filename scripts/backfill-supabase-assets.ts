@@ -33,6 +33,9 @@ const apiUrl =
   process.env.TREEZ_API_URL ??
   "https://treez-api-production.yingyingdontkill.workers.dev";
 const secret = process.env.TREEZ_API_SECRET;
+const sourceOverrides = parseSourceOverrides(
+  process.env.TREEZ_ASSET_SOURCE_OVERRIDES,
+);
 
 async function main() {
   if (apply && !secret) {
@@ -47,6 +50,8 @@ async function main() {
           mode: "dry-run",
           target: local ? "local" : "remote",
           candidates: assets.length,
+          resolvable: assets.filter((asset) => assetSourceUrl(asset) !== null)
+            .length,
           assets,
         },
         null,
@@ -67,7 +72,7 @@ async function main() {
   };
   const reportPath = resolve(
     process.cwd(),
-    ".agents/docs/260726/r2-asset-backfill.json",
+    ".agents/docs/260726/supabase-asset-backfill.json",
   );
   await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
   console.log(
@@ -92,7 +97,7 @@ function queryAssets(): AssetRow[] {
     `SELECT a.id, a.entity_id, a.kind, a.source_url, e.name
        FROM assets a
        LEFT JOIN entities e ON e.id = a.entity_id
-      WHERE a.source_url LIKE 'http%'
+      WHERE a.source_url IS NOT NULL
         AND (a.content_type IS NULL OR a.byte_size IS NULL)
       ORDER BY a.id`,
     "--json",
@@ -108,7 +113,13 @@ function queryAssets(): AssetRow[] {
 
 async function backfillAsset(asset: AssetRow): Promise<BackfillResult> {
   try {
-    const source = await fetch(asset.source_url, {
+    const sourceUrl = assetSourceUrl(asset);
+    if (!sourceUrl) {
+      throw new Error(
+        "source is a Notion attachment reference without a downloadable URL",
+      );
+    }
+    const source = await fetch(sourceUrl, {
       redirect: "follow",
       headers: {
         Accept: "image/avif,image/webp,image/png,image/jpeg,image/*;q=0.8",
@@ -175,6 +186,36 @@ async function backfillAsset(asset: AssetRow): Promise<BackfillResult> {
       error: error instanceof Error ? error.message : String(error),
     };
   }
+}
+
+function assetSourceUrl(asset: AssetRow): string | null {
+  const candidate = sourceOverrides[asset.id] ?? asset.source_url;
+  try {
+    const url = new URL(candidate);
+    return url.protocol === "http:" || url.protocol === "https:"
+      ? url.toString()
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseSourceOverrides(
+  value: string | undefined,
+): Record<string, string> {
+  if (!value) return {};
+  const parsed = JSON.parse(value) as unknown;
+  if (
+    !parsed ||
+    typeof parsed !== "object" ||
+    Array.isArray(parsed) ||
+    Object.values(parsed).some((item) => typeof item !== "string")
+  ) {
+    throw new Error(
+      "TREEZ_ASSET_SOURCE_OVERRIDES must be a JSON object of asset IDs to URLs.",
+    );
+  }
+  return parsed as Record<string, string>;
 }
 
 async function concurrentMap<T, R>(

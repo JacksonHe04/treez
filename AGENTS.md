@@ -124,10 +124,10 @@ Notion 在本项目中默认是只读来源；没有用户明确授权时，不�
 
 - 应用基线：Next.js App Router、React、TypeScript。
 - 组件系统：使用当时最新稳定版 shadcn/ui，不再以 Ant Design 为组件库。
-- 数据与后端从零建设在 Cloudflare：
+- 数据与业务后端建设在 Cloudflare，图床使用现有 Supabase iNon 项目：
   - D1 存储关系型业务数据。
-  - R2 存储需要持久化的封面或导入附件。
-  - Workers 提供与 D1/R2 紧密集成的服务端能力。
+  - Supabase Storage 的 `treez-assets` 公共 bucket 存储封面等图片。
+  - Workers 提供 D1 数据服务，并持有 Supabase 服务端密钥完成图片写入。
   - 只有出现明确需求时才引入 KV、Queues 或 Durable Objects。
 - 鉴权沿用当前 iNon SSO，不替换为其他身份系统。
 - 当前 Next.js 前端可以继续部署在 Vercel；浏览器不直连 D1，公开读走 Worker API，登录写先由服务端验证 iNon 会话，再签名调用 Worker。

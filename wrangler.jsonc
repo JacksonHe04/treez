@@ -10,6 +10,8 @@
   "vars": {
     "ENVIRONMENT": "development",
     "CORS_ORIGINS": "http://localhost:3000,https://treez.inon.space",
+    "SUPABASE_URL": "https://cbesquswcuvzipzldimc.supabase.co",
+    "SUPABASE_STORAGE_BUCKET": "treez-assets",
   },
   "d1_databases": [
     {
@@ -25,6 +27,8 @@
       "vars": {
         "ENVIRONMENT": "production",
         "CORS_ORIGINS": "https://treez.inon.space",
+        "SUPABASE_URL": "https://cbesquswcuvzipzldimc.supabase.co",
+        "SUPABASE_STORAGE_BUCKET": "treez-assets",
       },
       "d1_databases": [
         {

@@ -2,6 +2,7 @@ import { Hono, type Context } from "hono";
 import { z } from "zod";
 
 import { escapeLike, normalizeName } from "../../../lib/treez/strings";
+import { publicAssetUrl } from "../lib/storage";
 import { domainSchema, entityKindSchema } from "../schemas";
 import type { AppBindings } from "../types";
 
@@ -29,7 +30,8 @@ type EntityRow = {
 
 type CoverRow = Record<string, unknown> & {
   asset_id?: string | null;
-  cover_r2_key?: string | null;
+  cover_content_type?: string | null;
+  cover_object_key?: string | null;
   cover_url?: string | null;
 };
 
@@ -38,20 +40,23 @@ const publicRead = new Hono<AppBindings>();
 function withResolvedCover<T extends CoverRow>(
   context: Context<AppBindings>,
   row: T,
-): Omit<T, "asset_id" | "cover_r2_key"> & { cover_url: string | null } {
+): Omit<T, "asset_id" | "cover_content_type" | "cover_object_key"> & {
+  cover_url: string | null;
+} {
   const {
     asset_id: assetId,
-    cover_r2_key: r2Key,
+    cover_content_type: contentType,
+    cover_object_key: objectKey,
     cover_url: sourceUrl,
     ...rest
   } = row;
   const coverUrl =
-    assetId && r2Key && context.env.ASSETS
-      ? `${new URL(context.req.url).origin}/v1/assets/${encodeURIComponent(assetId)}`
+    assetId && objectKey && contentType
+      ? publicAssetUrl(context.env, objectKey)
       : (sourceUrl ?? null);
   return { ...rest, cover_url: coverUrl } as Omit<
     T,
-    "asset_id" | "cover_r2_key"
+    "asset_id" | "cover_content_type" | "cover_object_key"
   > & { cover_url: string | null };
 }
 
@@ -69,24 +74,12 @@ publicRead.get("/health", async (context) => {
 });
 
 publicRead.get("/assets/:id", async (context) => {
-  if (!context.env.ASSETS) {
-    return context.json(
-      {
-        error: {
-          code: "ASSET_STORAGE_UNAVAILABLE",
-          message: "Treez asset storage is not enabled yet.",
-        },
-      },
-      503,
-    );
-  }
-
   const asset = await context.env.DB.prepare(
-    "SELECT r2_key FROM assets WHERE id = ?",
+    "SELECT object_key, content_type FROM assets WHERE id = ?",
   )
     .bind(context.req.param("id"))
-    .first<{ r2_key: string | null }>();
-  if (!asset?.r2_key) {
+    .first<{ object_key: string | null; content_type: string | null }>();
+  if (!asset?.object_key || !asset.content_type) {
     return context.json(
       {
         error: {
@@ -98,25 +91,13 @@ publicRead.get("/assets/:id", async (context) => {
     );
   }
 
-  const object = await context.env.ASSETS.get(asset.r2_key);
-  if (!object) {
-    return context.json(
-      {
-        error: {
-          code: "ASSET_OBJECT_NOT_FOUND",
-          message: "The requested Treez asset has not been archived.",
-        },
-      },
-      404,
-    );
-  }
-
-  const headers = new Headers({
-    "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
-    ETag: object.httpEtag,
+  return new Response(null, {
+    status: 302,
+    headers: {
+      "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+      Location: publicAssetUrl(context.env, asset.object_key),
+    },
   });
-  object.writeHttpMetadata(headers);
-  return new Response(object.body, { headers });
 });
 
 publicRead.get("/entities", async (context) => {
@@ -173,7 +154,9 @@ publicRead.get("/entities", async (context) => {
   const [itemsResult, countRow] = await context.env.DB.batch([
     context.env.DB.prepare(
       `SELECT e.id, e.domain, e.kind, e.name, e.description, e.release_date,
-                e.published_at, a.id AS asset_id, a.r2_key AS cover_r2_key,
+                e.published_at, a.id AS asset_id,
+                a.object_key AS cover_object_key,
+                a.content_type AS cover_content_type,
                 a.source_url AS cover_url,
                 COALESCE(ers.rating_count, 0) AS rating_count,
                 ers.average_score
@@ -199,7 +182,8 @@ publicRead.get("/entities", async (context) => {
 publicRead.get("/entities/:id", async (context) => {
   const id = context.req.param("id");
   const entity = await context.env.DB.prepare(
-    `SELECT e.*, a.id AS asset_id, a.r2_key AS cover_r2_key,
+    `SELECT e.*, a.id AS asset_id, a.object_key AS cover_object_key,
+            a.content_type AS cover_content_type,
             a.source_url AS cover_url,
             COALESCE(ers.rating_count, 0) AS rating_count,
             ers.average_score
@@ -282,7 +266,8 @@ publicRead.get("/search", async (context) => {
 
   const result = await context.env.DB.prepare(
     `SELECT e.id, e.domain, e.kind, e.name, e.release_date,
-            a.id AS asset_id, a.r2_key AS cover_r2_key,
+            a.id AS asset_id, a.object_key AS cover_object_key,
+            a.content_type AS cover_content_type,
             a.source_url AS cover_url,
             COALESCE(ers.rating_count, 0) AS rating_count,
             ers.average_score
@@ -350,7 +335,8 @@ async function profileResponse(
       `SELECT r.id, r.score_tenths / 10.0 AS score, r.comment,
                 r.commented_at, r.rated_at,
                 e.id AS entity_id, e.name, e.domain, e.kind,
-                a.id AS asset_id, a.r2_key AS cover_r2_key,
+                a.id AS asset_id, a.object_key AS cover_object_key,
+                a.content_type AS cover_content_type,
                 a.source_url AS cover_url,
                 COALESCE((
                   SELECT json_group_array(json_object('slug', t.slug, 'name', t.name))
@@ -419,7 +405,8 @@ publicRead.get("/home", async (context) => {
   const [recent, acclaimed, domains] = await context.env.DB.batch([
     context.env.DB.prepare(
       `SELECT e.id, e.name, e.domain, e.kind, e.published_at,
-              a.id AS asset_id, a.r2_key AS cover_r2_key,
+              a.id AS asset_id, a.object_key AS cover_object_key,
+              a.content_type AS cover_content_type,
               a.source_url AS cover_url,
               COALESCE(ers.rating_count, 0) AS rating_count,
               ers.average_score
@@ -431,7 +418,8 @@ publicRead.get("/home", async (context) => {
     ),
     context.env.DB.prepare(
       `SELECT e.id, e.name, e.domain, e.kind,
-              a.id AS asset_id, a.r2_key AS cover_r2_key,
+              a.id AS asset_id, a.object_key AS cover_object_key,
+              a.content_type AS cover_content_type,
               a.source_url AS cover_url,
               ers.rating_count, ers.average_score
        FROM entities e

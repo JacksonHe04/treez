@@ -3,6 +3,7 @@ import { Hono } from "hono";
 
 import { requireSignedUser } from "../lib/auth";
 import { profileStatement } from "../lib/profile";
+import { isAssetStorageConfigured, uploadAsset } from "../lib/storage";
 import { normalizeName, slugify } from "../../../lib/treez/strings";
 import { createEntitySchema, updateRatingSchema } from "../schemas";
 import type { AppBindings } from "../types";
@@ -312,7 +313,7 @@ signedWrite.put(
 );
 
 signedWrite.put("/assets/:id/content", async (context) => {
-  if (!context.env.ASSETS) {
+  if (!isAssetStorageConfigured(context.env)) {
     return context.json(
       {
         error: {
@@ -341,33 +342,26 @@ signedWrite.put("/assets/:id/content", async (context) => {
     );
   }
 
-  const body = await context.req.arrayBuffer();
-  if (body.byteLength === 0 || body.byteLength > 10 * 1024 * 1024) {
+  const image = await readImageAsset(context.req.raw);
+  if (!image.ok) {
     return context.json(
       {
         error: {
-          code: "INVALID_ASSET_SIZE",
-          message: "Assets must be between 1 byte and 10 MB.",
+          code: image.code,
+          message: image.message,
         },
       },
       400,
     );
   }
 
+  const { body, contentType } = image;
   const checksum = await hashHex(body);
-  const contentType =
-    context.req.header("content-type") ?? "application/octet-stream";
   const key = `${asset.kind}/${checksum}`;
-  await context.env.ASSETS.put(key, body, {
-    httpMetadata: { contentType },
-    customMetadata: {
-      assetId: asset.id,
-      ...(asset.entity_id ? { entityId: asset.entity_id } : {}),
-    },
-  });
+  await uploadAsset(context.env, key, body, contentType);
   await context.env.DB.prepare(
     `UPDATE assets
-        SET r2_key = ?, content_type = ?, byte_size = ?, checksum = ?
+        SET object_key = ?, content_type = ?, byte_size = ?, checksum = ?
       WHERE id = ?`,
   )
     .bind(key, contentType, body.byteLength, checksum, asset.id)
@@ -387,7 +381,7 @@ signedWrite.put("/assets/:id/content", async (context) => {
 });
 
 signedWrite.post("/assets", async (context) => {
-  if (!context.env.ASSETS) {
+  if (!isAssetStorageConfigured(context.env)) {
     return context.json(
       {
         error: {
@@ -430,27 +424,23 @@ signedWrite.post("/assets", async (context) => {
     );
   }
 
-  const body = await context.req.arrayBuffer();
-  if (body.byteLength === 0 || body.byteLength > 10 * 1024 * 1024) {
+  const image = await readImageAsset(context.req.raw);
+  if (!image.ok) {
     return context.json(
       {
         error: {
-          code: "INVALID_ASSET_SIZE",
-          message: "Assets must be between 1 byte and 10 MB.",
+          code: image.code,
+          message: image.message,
         },
       },
       400,
     );
   }
 
+  const { body, contentType } = image;
   const checksum = await hashHex(body);
-  const contentType =
-    context.req.header("content-type") ?? "application/octet-stream";
   const key = `${kind}/${checksum}`;
-  await context.env.ASSETS.put(key, body, {
-    httpMetadata: { contentType },
-    customMetadata: { entityId },
-  });
+  await uploadAsset(context.env, key, body, contentType);
 
   const existingAsset = await context.env.DB.prepare(
     `SELECT id FROM assets
@@ -463,10 +453,10 @@ signedWrite.post("/assets", async (context) => {
   await context.env.DB.batch([
     context.env.DB.prepare(
       `INSERT INTO assets (
-           id, entity_id, kind, r2_key, content_type, byte_size, checksum
+           id, entity_id, kind, object_key, content_type, byte_size, checksum
          ) VALUES (?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
-           r2_key = excluded.r2_key,
+           object_key = excluded.object_key,
            content_type = excluded.content_type,
            byte_size = excluded.byte_size,
            checksum = excluded.checksum`,
@@ -491,6 +481,34 @@ signedWrite.post("/assets", async (context) => {
 async function contentChecksum(value: unknown): Promise<string> {
   const encoded = new TextEncoder().encode(JSON.stringify(value));
   return hashHex(encoded.buffer as ArrayBuffer);
+}
+
+type ImageAssetResult =
+  | { ok: true; body: ArrayBuffer; contentType: string }
+  | { ok: false; code: string; message: string };
+
+async function readImageAsset(request: Request): Promise<ImageAssetResult> {
+  const body = await request.arrayBuffer();
+  if (body.byteLength === 0 || body.byteLength > 10 * 1024 * 1024) {
+    return {
+      ok: false,
+      code: "INVALID_ASSET_SIZE",
+      message: "Images must be between 1 byte and 10 MB.",
+    };
+  }
+
+  const contentType =
+    request.headers.get("content-type")?.split(";")[0]?.trim() ??
+    "application/octet-stream";
+  if (!contentType.startsWith("image/")) {
+    return {
+      ok: false,
+      code: "INVALID_ASSET_TYPE",
+      message: "Treez asset storage only accepts images.",
+    };
+  }
+
+  return { ok: true, body, contentType };
 }
 
 async function hashHex(

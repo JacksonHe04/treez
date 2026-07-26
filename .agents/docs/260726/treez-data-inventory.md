@@ -92,7 +92,7 @@ Score Database 163、Score 163、Short Comment 123、Playlists 66。
 | Star / Score | `ratings.score_tenths` |
 | Appreciation Date | `ratings.commented_at`，若无评论也保留为鉴赏日期 |
 | Short Comment / Description / 正文鉴赏 | `ratings.comment` 或实体 `description` |
-| Cover | `assets`，最终写入 R2，并保留原始 URL |
+| Cover | `assets`，最终写入 Supabase Storage，并保留原始 URL |
 | Genre / Country / Region 等 | `entity_metadata` 与可检索规范字段 |
 | notion_id / 页面 ID | `source_records.source_id` |
 | inon_id | `source_records.external_id` |

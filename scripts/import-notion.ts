@@ -505,7 +505,7 @@ function renderSql(plan: ImportPlan, sourceRootPath: string): string {
       statements.push(
         sql`
           INSERT INTO assets (
-            id, entity_id, kind, r2_key, source_url, checksum, alt_text
+            id, entity_id, kind, object_key, source_url, checksum, alt_text
           ) VALUES (
             ${assetId}, ${entity.id}, 'cover',
             ${`pending/notion/${coverChecksum}`}, ${entity.coverUrl},
@@ -513,7 +513,7 @@ function renderSql(plan: ImportPlan, sourceRootPath: string): string {
           )
           ON CONFLICT(id) DO UPDATE SET
             entity_id = excluded.entity_id,
-            r2_key = excluded.r2_key,
+            object_key = excluded.object_key,
             source_url = excluded.source_url,
             checksum = excluded.checksum,
             alt_text = excluded.alt_text;
@@ -601,10 +601,7 @@ function renderSql(plan: ImportPlan, sourceRootPath: string): string {
         page: rating.sourcePage,
         sourceIdSuffix: "rating",
         batchId: plan.batchId,
-        verificationStatus: verificationStatusForPage(
-          plan,
-          rating.sourcePage,
-        ),
+        verificationStatus: verificationStatusForPage(plan, rating.sourcePage),
         sourceRootPath,
       }),
     );
@@ -758,7 +755,7 @@ ${verificationNotes}
 - 同一用户/实体评分使用 upsert；同一输入重跑不会增加当前评分。
 - 来源以 \`source + source_id + record_type\` 唯一。
 - 同一快照产生固定批次 ID：\`${plan.batchId}\`。
-- 封面先保留原 URL 和内容摘要 key；R2 启用后以相同摘要下载去重。
+- 封面先保留原 URL 和内容摘要 key；Supabase Storage 回填时以相同摘要下载去重。
 
 ## 应用前检查
 
@@ -773,11 +770,12 @@ function verificationStatusForPage(
   plan: ImportPlan,
   page: NotionPage,
 ): VerificationStatus {
-  const kind = (Object.keys(plan.cloudManifest.databases) as CloudDatabaseKind[])
-    .find(
-      (candidate) =>
-        plan.cloudManifest.databases[candidate].pageId === page.parentId,
-    );
+  const kind = (
+    Object.keys(plan.cloudManifest.databases) as CloudDatabaseKind[]
+  ).find(
+    (candidate) =>
+      plan.cloudManifest.databases[candidate].pageId === page.parentId,
+  );
 
   return kind &&
     plan.cloudManifest.databases[kind].idVerification === "complete"

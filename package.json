@@ -17,13 +17,14 @@
     "db:migrate:local": "wrangler d1 migrations apply treez-production --local",
     "db:migrate:remote": "wrangler d1 migrations apply treez-production --remote --env production",
     "import:notion:dry-run": "tsx scripts/import-notion.ts",
-    "assets:r2:dry-run": "tsx scripts/backfill-r2-assets.ts",
-    "assets:r2:apply": "tsx scripts/backfill-r2-assets.ts --apply"
+    "assets:supabase:dry-run": "tsx scripts/backfill-supabase-assets.ts",
+    "assets:supabase:apply": "tsx scripts/backfill-supabase-assets.ts --apply"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.9.0",
     "@inon-ai/inon-sso": "0.1.0",
     "@reduxjs/toolkit": "^2.7.0",
+    "@supabase/supabase-js": "2.110.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",

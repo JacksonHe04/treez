@@ -1,6 +1,6 @@
 # Treez Notion 导入 Dry-run
 
-生成时间：2026-07-26T00:11:22.057Z
+生成时间：2026-07-26T00:29:22.431Z
 
 批次：`import_2ac2fe52181b5cc27dc835ea`
 
@@ -48,7 +48,7 @@
 - 同一用户/实体评分使用 upsert；同一输入重跑不会增加当前评分。
 - 来源以 `source + source_id + record_type` 唯一。
 - 同一快照产生固定批次 ID：`import_2ac2fe52181b5cc27dc835ea`。
-- 封面先保留原 URL 和内容摘要 key；R2 启用后以相同摘要下载去重。
+- 封面先保留原 URL 和内容摘要 key；Supabase Storage 回填时以相同摘要下载去重。
 
 ## 应用前检查
 
