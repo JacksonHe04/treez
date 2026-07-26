@@ -121,10 +121,7 @@ async function backfillAsset(asset: AssetRow): Promise<BackfillResult> {
     }
     const source = await fetch(sourceUrl, {
       redirect: "follow",
-      headers: {
-        Accept: "image/avif,image/webp,image/png,image/jpeg,image/*;q=0.8",
-        "User-Agent": "Treez/1.0 (+https://treez.inon.space)",
-      },
+      headers: sourceRequestHeaders(sourceUrl),
     });
     if (!source.ok) {
       throw new Error(`source returned HTTP ${source.status}`);
@@ -186,6 +183,21 @@ async function backfillAsset(asset: AssetRow): Promise<BackfillResult> {
       error: error instanceof Error ? error.message : String(error),
     };
   }
+}
+
+function sourceRequestHeaders(sourceUrl: string): HeadersInit {
+  const headers: Record<string, string> = {
+    Accept: "image/avif,image/webp,image/png,image/jpeg,image/*;q=0.8",
+    "User-Agent":
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " +
+      "AppleWebKit/537.36 (KHTML, like Gecko) " +
+      "Chrome/140.0.0.0 Safari/537.36",
+  };
+  const hostname = new URL(sourceUrl).hostname;
+  if (hostname.endsWith(".doubanio.com")) {
+    headers.Referer = "https://movie.douban.com/";
+  }
+  return headers;
 }
 
 function assetSourceUrl(asset: AssetRow): string | null {
