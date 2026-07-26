@@ -36,6 +36,5 @@ Thumbs.db
 .playwright-cli/
 output/
 
-# Reproducible Notion import payloads may contain personal source data
-.agents/docs/**/import/apply.sql
-.agents/docs/**/import/dry-run.json
+# Local agent workspace
+.agents/
