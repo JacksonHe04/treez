@@ -1,8 +1,12 @@
 import dayjs from "dayjs";
 
 export function formatDate(value: string, fallback = "日期未记录"): string {
+  const isoDate = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (isoDate) return `${isoDate[1]}.${isoDate[2]}.${isoDate[3]}`;
   const date = dayjs(value);
-  return date.isValid() ? date.format("YYYY.MM.DD") : fallback;
+  if (!date.isValid()) return fallback;
+  const [year, month, day] = date.toISOString().slice(0, 10).split("-");
+  return `${year}.${month}.${day}`;
 }
 
 export function formatScore(value: number | null | undefined): string {
