@@ -9,7 +9,7 @@
 ## 生产资源
 
 - Web：`https://treez.inon.space`
-- Vercel deployment：`dpl_2wENtLAqNcT9uYFJsAFu77v9J49R`
+- Vercel deployment：`dpl_8ocdf5gkGeYVdn19NwRmLa5TKRMx`
 - Worker：`https://treez-api-production.yingyingdontkill.workers.dev`
 - Worker version：`aa5bbd83-24ef-4351-a980-e7c6ba6a2009`
 - D1：`treez-production`
@@ -39,6 +39,7 @@
 | SSO 会话 | 通过 | 生产浏览器以真实 iNon 会话识别 `@yingyingdontkill`，个人档案返回 222 条导入评分 |
 | 十分制/五星制 | 通过 | 新输入保持半星步进；生产已有 `7.5 / 10` 无损显示为 `3.75 / 5` |
 | Heritage 主题一致性 | 通过 | 根元素固定 `light`，`color-scheme=light`，生产背景为暖白 `rgb(247, 246, 240)`；Sonner 与页面共用主题上下文 |
+| 条目封面比例 | 通过 | 共享 `EntityCover` 固定 1:1；生产目录 286.96×286.96、详情 357.81×357.81、公开时间线 110×110，头像与品牌图形不受影响 |
 | 移动端 | 通过 | 390×844 无横向溢出，完整导航、首页与卡片流可见 |
 | 移动端 SSO | 通过 | 登录态菜单可达我的公开档案与 `/sso/end` 退出入口 |
 | 浏览器错误 | 通过 | 无 Next error overlay、无 page error、无 console error |
@@ -58,7 +59,7 @@
 
 ## 回滚
 
-- Vercel：从 deployment `dpl_2wENtLAqNcT9uYFJsAFu77v9J49R` 回滚至 `dpl_6BnE8PSJLzqWE5SPebd3kD9LRR92`。
+- Vercel：从 deployment `dpl_8ocdf5gkGeYVdn19NwRmLa5TKRMx` 回滚至 `dpl_2wENtLAqNcT9uYFJsAFu77v9J49R`。
 - Worker：在 Cloudflare Versions 中将上一版本恢复为 100% 流量。
 - D1：迁移只追加；数据恢复使用导入前导出或重新运行幂等导入器。
 - Supabase：对象 key 使用内容摘要；回滚 Worker/D1 时保留对象即可，不需要删除。
