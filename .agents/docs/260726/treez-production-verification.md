@@ -45,7 +45,7 @@
 | 移动端 SSO | 通过 | 登录态菜单可达我的公开档案与 `/sso/end` 退出入口 |
 | 浏览器错误 | 通过 | 无 Next error overlay、无 page error、无 console error |
 | Vercel 运行日志 | 通过 | 最新生产发布后 1 小时窗口无 runtime error 聚类 |
-| 登录后真实写入 | 待用户确认 | 已在真实《Hibernation》更新表单停驻；公开提交会刷新 `ratedAt`，须用户明确确认 |
+| 登录后真实写入 | 通过并恢复 | iNon SSO 自动回跳后更新既有《Hibernation》评分；D1 保持单条当前评分，新增 `updated` 事件，服务端写入 `ratedAt`，首页/聚合/公开档案同步；验收后逐字段恢复基线并删除该事件 |
 
 ## 视觉证据
 
