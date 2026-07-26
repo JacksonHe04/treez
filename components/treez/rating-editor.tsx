@@ -13,6 +13,7 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { treezLoginPath } from "@/lib/auth/paths";
+import { formatScore, formatStarScore } from "@/lib/treez/format";
 import type { PublicRating } from "@/lib/treez/types";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setScoreMode } from "@/store/slices/preferencesSlice";
@@ -119,7 +120,11 @@ export function RatingEditor({
       <div className="rating-editor__score">
         <span>
           {mode === "stars" && <Star aria-hidden="true" fill="currentColor" />}
-          <strong>{displayedScore.toFixed(1)}</strong>
+          <strong>
+            {mode === "ten"
+              ? formatScore(displayedScore)
+              : formatStarScore(displayedScore)}
+          </strong>
           <small>/ {mode === "ten" ? "10" : "5"}</small>
         </span>
         <Slider

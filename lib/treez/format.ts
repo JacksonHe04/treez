@@ -13,6 +13,13 @@ export function formatScore(value: number | null | undefined): string {
   return value === null || value === undefined ? "—" : Number(value).toFixed(1);
 }
 
+export function formatStarScore(value: number): string {
+  return new Intl.NumberFormat("zh-CN", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 export function formatCount(value: number): string {
   return new Intl.NumberFormat("zh-CN").format(value);
 }

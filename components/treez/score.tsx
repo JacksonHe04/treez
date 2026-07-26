@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { toggleScoreMode } from "@/store/slices/preferencesSlice";
 import { cn } from "@/lib/utils";
-import { formatScore } from "@/lib/treez/format";
+import { formatScore, formatStarScore } from "@/lib/treez/format";
 
 export function ScoreValue({
   value,
@@ -42,7 +42,7 @@ export function ScoreValue({
       ) : (
         <>
           <Star aria-hidden="true" fill="currentColor" />
-          <strong>{formatScore(value / 2)}</strong>
+          <strong>{formatStarScore(value / 2)}</strong>
           <small>/ 5</small>
         </>
       )}
