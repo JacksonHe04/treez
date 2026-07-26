@@ -1,9 +1,20 @@
 export function normalizeName(value: string): string {
+  const normalized = value
+    .normalize("NFKC")
+    .trim()
+    .toLocaleLowerCase()
+    .replace(/[\s\p{P}\p{S}]+/gu, " ")
+    .trim();
+
+  return normalized || value.normalize("NFKC").trim().toLocaleLowerCase();
+}
+
+export function normalizeTagName(value: string): string {
   return value
     .normalize("NFKC")
     .trim()
     .toLocaleLowerCase()
-    .replace(/[\s\p{P}\p{S}]+/gu, " ");
+    .replace(/\s+/gu, " ");
 }
 
 export function slugify(value: string): string {

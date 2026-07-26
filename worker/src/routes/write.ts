@@ -4,7 +4,11 @@ import { Hono } from "hono";
 import { requireSignedUser } from "../lib/auth";
 import { profileStatement } from "../lib/profile";
 import { isAssetStorageConfigured, uploadAsset } from "../lib/storage";
-import { normalizeName, slugify } from "../../../lib/treez/strings";
+import {
+  normalizeName,
+  normalizeTagName,
+  slugify,
+} from "../../../lib/treez/strings";
 import { createEntitySchema, updateRatingSchema } from "../schemas";
 import type { AppBindings } from "../types";
 import { isValidDomainKind } from "../types";
@@ -274,7 +278,7 @@ signedWrite.put(
     ];
 
     for (const [position, name] of input.tags.entries()) {
-      const normalized = normalizeName(name);
+      const normalized = normalizeTagName(name);
       const tagHash = await hashText(normalized);
       const tagId = `tag_${tagHash}`;
       const tagSlug = `${slugify(name)}-${tagHash.slice(0, 10)}`;
