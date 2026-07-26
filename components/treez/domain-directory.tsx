@@ -28,6 +28,7 @@ export function DomainDirectory({
   pageSize: number;
 }) {
   const Icon = config.icon;
+  const beyondLastPage = total > 0 && entities.length === 0;
   function directoryHref(input: {
     kind?: EntityKind;
     q?: string;
@@ -64,11 +65,7 @@ export function DomainDirectory({
       </section>
 
       <section className="directory page-shell">
-        <form
-          action={config.href}
-          className="directory-search"
-          role="search"
-        >
+        <form action={config.href} className="directory-search" role="search">
           <Search aria-hidden="true" />
           <Input
             type="search"
@@ -186,21 +183,31 @@ export function DomainDirectory({
         ) : (
           <EmptyState
             title={
-              query
-                ? `${config.label}档案中没有“${query}”`
-                : `${config.label}档案正在等待第一条记录`
+              beyondLastPage
+                ? "这一页已经越过档案末端"
+                : query
+                  ? `${config.label}档案中没有“${query}”`
+                  : `${config.label}档案正在等待第一条记录`
             }
             description={
-              query
-                ? "可以调整名称或类型继续搜索；确认不存在时，把它种成新的公共条目。"
-                : "这个领域尚无公共条目。登录后新增的作品或创作者会立即成为全站可见的公共资料。"
+              beyondLastPage
+                ? "当前筛选仍有公共条目，可以回到第一页继续浏览。"
+                : query
+                  ? "可以调整名称或类型继续搜索；确认不存在时，把它种成新的公共条目。"
+                  : "这个领域尚无公共条目。登录后新增的作品或创作者会立即成为全站可见的公共资料。"
             }
-            actionHref={`/add?${new URLSearchParams({
-              domain: config.id,
-              ...(selectedKind ? { kind: selectedKind } : {}),
-              ...(query ? { name: query } : {}),
-            })}`}
-            actionLabel={query ? "新增这个条目" : undefined}
+            actionHref={
+              beyondLastPage
+                ? directoryHref({ kind: selectedKind, q: query, sort })
+                : `/add?${new URLSearchParams({
+                    domain: config.id,
+                    ...(selectedKind ? { kind: selectedKind } : {}),
+                    ...(query ? { name: query } : {}),
+                  })}`
+            }
+            actionLabel={
+              beyondLastPage ? "返回第一页" : query ? "新增这个条目" : undefined
+            }
           />
         )}
       </section>
