@@ -9,9 +9,9 @@
 ## 生产资源
 
 - Web：`https://treez.inon.space`
-- Vercel deployment：`dpl_5re6DeEV4m2t6X2GBNkHgUXYu6eZ`
+- Vercel deployment：`dpl_4TzsHLtyBL27BEmrQW1uxau6ZiZM`
 - Worker：`https://treez-api-production.yingyingdontkill.workers.dev`
-- Worker version：`47d98b09-e611-4e04-9f9c-beba3b93791a`
+- Worker version：`3c1ee3c8-26cf-44c5-adec-bc93b81c25b6`
 - D1：`treez-production`
 - D1 ID：`442b52ad-bfb9-46de-8753-2cc09086ee4d`
 - Supabase：iNon 项目 `cbesquswcuvzipzldimc`
@@ -32,6 +32,7 @@
 | 匿名公共读 | 通过 | 首页、音乐目录、搜索、实体详情、个人档案均返回真实导入数据 |
 | 搜索代理 | 通过 | `/api/treez/search?q=Radiohead` 返回 HTTP 200 与 1 条结果 |
 | 搜索到新增 | 通过 | 生产浏览器验证无结果名称可带入新增页；已有会话草稿时显式搜索名称仍优先 |
+| 四领域登录写 | 通过（隔离 D1） | 九种实体、关系、评分更新、日期、标签、聚合与四领域个人档案全部通过可重复写入脚本 |
 | 匿名写保护 | 通过 | POST `/api/treez/entities` 返回 HTTP 401，不产生数据 |
 | SSO 入口 | 通过 | `/sso/start` 返回 303 至 `inon.space/api/sso/auth/oauth2/authorize` |
 | SSO 会话 | 通过 | 生产浏览器以真实 iNon 会话识别 `@yingyingdontkill`，个人档案返回 222 条导入评分 |
@@ -54,7 +55,7 @@
 
 ## 回滚
 
-- Vercel：从 deployment `dpl_5re6DeEV4m2t6X2GBNkHgUXYu6eZ` 回滚至 `dpl_81h3jZaYuQPwtdkWdSYqfbVegvts`。
+- Vercel：从 deployment `dpl_4TzsHLtyBL27BEmrQW1uxau6ZiZM` 回滚至 `dpl_5re6DeEV4m2t6X2GBNkHgUXYu6eZ`。
 - Worker：在 Cloudflare Versions 中将上一版本恢复为 100% 流量。
 - D1：迁移只追加；数据恢复使用导入前导出或重新运行幂等导入器。
 - Supabase：对象 key 使用内容摘要；回滚 Worker/D1 时保留对象即可，不需要删除。
